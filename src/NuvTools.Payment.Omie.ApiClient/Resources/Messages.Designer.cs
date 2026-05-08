@@ -65,7 +65,7 @@ internal class Messages
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to Falha na comunicação {0}..
+    ///   Looks up a localized string similar to Communication failure {0}..
     /// </summary>
     internal static string FailedCommunicationX
     {
@@ -76,7 +76,7 @@ internal class Messages
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to ao consultar cliente Omie.
+    ///   Looks up a localized string similar to when consulting Omie client.
     /// </summary>
     internal static string WhenConsultingOmieClient
     {
@@ -87,7 +87,7 @@ internal class Messages
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to ao consultar serviço Omie.
+    ///   Looks up a localized string similar to when consulting Omie service.
     /// </summary>
     internal static string WhenConsultingOmieService
     {
@@ -98,7 +98,7 @@ internal class Messages
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to ao incluir ordem de serviço Omie.
+    ///   Looks up a localized string similar to when including Omie service order.
     /// </summary>
     internal static string WhenIncludingOmieWorkOrder
     {
@@ -109,13 +109,79 @@ internal class Messages
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to ao faturar ordem de serviço Omie.
+    ///   Looks up a localized string similar to when generating Omie billet.
     /// </summary>
-    internal static string WhenInvoicingOmieServiceOrder
+    internal static string WhenGeneratingOmieBillet
     {
         get
         {
-            return ResourceManager.GetString("WhenInvoicingOmieServiceOrder", resourceCulture)!;
+            return ResourceManager.GetString("WhenGeneratingOmieBillet", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to when including Omie receivable.
+    /// </summary>
+    internal static string WhenIncludingOmieReceivable
+    {
+        get
+        {
+            return ResourceManager.GetString("WhenIncludingOmieReceivable", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to when retrieving Omie billet.
+    /// </summary>
+    internal static string WhenGettingOmieBillet
+    {
+        get
+        {
+            return ResourceManager.GetString("WhenGettingOmieBillet", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to Invalid response from Omie API ({0}).
+    /// </summary>
+    internal static string InvalidResponseFromOmieX
+    {
+        get
+        {
+            return ResourceManager.GetString("InvalidResponseFromOmieX", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to Provide nCodTitulo or cCodIntTitulo.
+    /// </summary>
+    internal static string ProvideTituloIdentifier
+    {
+        get
+        {
+            return ResourceManager.GetString("ProvideTituloIdentifier", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to Omie returned status {0} without description...
+    /// </summary>
+    internal static string OmieReturnedStatusXWithoutDescription
+    {
+        get
+        {
+            return ResourceManager.GetString("OmieReturnedStatusXWithoutDescription", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to Unknown error from Omie API.
+    /// </summary>
+    internal static string UnknownErrorFromOmie
+    {
+        get
+        {
+            return ResourceManager.GetString("UnknownErrorFromOmie", resourceCulture)!;
         }
     }
 }

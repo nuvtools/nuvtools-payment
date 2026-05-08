@@ -98,13 +98,35 @@ internal class Fields
     }
 
     /// <summary>
-    ///   Looks up a localized string similar to FaturarOS.
+    ///   Looks up a localized string similar to GerarBoleto.
     /// </summary>
-    internal static string InvoiceOS
+    internal static string GenerateBillet
     {
         get
         {
-            return ResourceManager.GetString("InvoiceOS", resourceCulture)!;
+            return ResourceManager.GetString("GenerateBillet", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to IncluirContaReceber.
+    /// </summary>
+    internal static string IncludeReceivable
+    {
+        get
+        {
+            return ResourceManager.GetString("IncludeReceivable", resourceCulture)!;
+        }
+    }
+
+    /// <summary>
+    ///   Looks up a localized string similar to ObterBoleto.
+    /// </summary>
+    internal static string GetBillet
+    {
+        get
+        {
+            return ResourceManager.GetString("GetBillet", resourceCulture)!;
         }
     }
 }

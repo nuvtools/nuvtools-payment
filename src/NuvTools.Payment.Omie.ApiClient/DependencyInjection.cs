@@ -7,14 +7,14 @@ using NuvTools.Payment.Omie.ApiClient.Contracts;
 namespace NuvTools.Payment.Omie.ApiClient;
 
 /// <summary>
-/// Extensoes para registro do cliente Omie API no container de DI.
+/// Extensions to register the Omie API client in the DI container.
 /// </summary>
 public static class DependencyInjection
 {
     private const string HttpClientName = "OmieApi";
 
     /// <summary>
-    /// Adiciona o cliente da API Omie ao container de servicos.
+    /// Adds the Omie API client to the service container.
     /// </summary>
     public static IServiceCollection AddOmieApiClient(this IServiceCollection services, IConfiguration configuration)
     {

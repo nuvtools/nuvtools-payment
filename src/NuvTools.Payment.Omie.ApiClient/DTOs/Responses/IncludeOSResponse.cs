@@ -2,20 +2,20 @@ using System.Text.Json.Serialization;
 
 namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
-public class IncluirOSResponse
+public class IncludeOSResponse
 {
     [JsonPropertyName("cCodIntOS")]
-    public string? CCodIntOS { get; set; }
+    public string? OsIntegrationCode { get; set; }
 
     [JsonPropertyName("nCodOS")]
-    public long NCodOS { get; set; }
+    public long OsCode { get; set; }
 
     [JsonPropertyName("cNumOS")]
-    public string? CNumOS { get; set; }
+    public string? OsNumber { get; set; }
 
     [JsonPropertyName("cCodStatus")]
-    public string? CCodStatus { get; set; }
+    public string? StatusCode { get; set; }
 
     [JsonPropertyName("cDescStatus")]
-    public string? CDescStatus { get; set; }
+    public string? StatusDescription { get; set; }
 }
