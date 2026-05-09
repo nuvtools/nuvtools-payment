@@ -4,27 +4,39 @@ using NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 namespace NuvTools.Payment.Omie.ApiClient.Contracts;
 
 /// <summary>
-/// Interface para comunicacao com a API Omie.
+/// Interface for communication with the Omie API.
 /// </summary>
 public interface IOmieApiClient
 {
     /// <summary>
-    /// Consulta se um cliente existe no Omie pelo codigo.
+    /// Checks whether a client exists in Omie by its code.
     /// </summary>
-    Task<OmieApiResult<bool>> ConsultarClienteAsync(long codigoClienteOmie, CancellationToken cancellationToken = default);
+    Task<OmieApiResult<bool>> ConsultClientAsync(long omieClientCode, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Consulta os dados cadastrais de um servico no Omie.
+    /// Retrieves the registration data of a service in Omie.
     /// </summary>
-    Task<OmieApiResult<ConsultarCadastroServicoResponse>> ConsultarCadastroServicoAsync(long serviceCodeOmie, CancellationToken cancellationToken = default);
+    Task<OmieApiResult<ConsultServiceRegistrationResponse>> ConsultServiceRegistrationAsync(long omieServiceCode, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Inclui uma Ordem de Servico no Omie.
+    /// Includes a Service Order (OS) in Omie.
     /// </summary>
-    Task<OmieApiResult<IncluirOSResponse>> IncluirOSAsync(IncluirOSParam param, CancellationToken cancellationToken = default);
+    Task<OmieApiResult<IncludeOSResponse>> IncludeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Fatura uma Ordem de Servico existente no Omie.
+    /// Includes an Accounts Receivable entry in Omie.
     /// </summary>
-    Task<OmieApiResult<FaturarOSResponse>> FaturarOSAsync(string internalCodeOS, CancellationToken cancellationToken = default);
+    Task<OmieApiResult<IncludeReceivableResponse>> IncludeReceivableAsync(IncludeReceivableParam param, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates the billet of an existing Accounts Receivable entry in Omie.
+    /// At least one of the two identifiers must be provided.
+    /// </summary>
+    Task<OmieApiResult<GenerateBilletResponse>> GenerateBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the billet link/details for an existing Accounts Receivable entry in Omie.
+    /// Use after GenerateBillet to fetch the actual download URL, barcode, etc.
+    /// </summary>
+    Task<OmieApiResult<GetBilletResponse>> GetBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default);
 }

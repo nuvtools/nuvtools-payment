@@ -59,18 +59,36 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="FailedCommunicationX" xml:space="preserve">
-    <value>Falha na comunicação {0}.</value>
+    <value>Communication failure {0}.</value>
   </data>
   <data name="WhenConsultingOmieClient" xml:space="preserve">
-    <value>ao consultar cliente Omie</value>
+    <value>when consulting Omie client</value>
   </data>
   <data name="WhenConsultingOmieService" xml:space="preserve">
-    <value>ao consultar serviço Omie</value>
+    <value>when consulting Omie service</value>
   </data>
   <data name="WhenIncludingOmieWorkOrder" xml:space="preserve">
-    <value>ao incluir ordem de serviço Omie</value>
+    <value>when including Omie service order</value>
   </data>
-  <data name="WhenInvoicingOmieServiceOrder" xml:space="preserve">
-    <value>ao faturar ordem de serviço Omie</value>
+  <data name="WhenGeneratingOmieBillet" xml:space="preserve">
+    <value>when generating Omie billet</value>
+  </data>
+  <data name="WhenIncludingOmieReceivable" xml:space="preserve">
+    <value>when including Omie receivable</value>
+  </data>
+  <data name="WhenGettingOmieBillet" xml:space="preserve">
+    <value>when retrieving Omie billet</value>
+  </data>
+  <data name="InvalidResponseFromOmieX" xml:space="preserve">
+    <value>Invalid response from Omie API ({0}).</value>
+  </data>
+  <data name="ProvideTituloIdentifier" xml:space="preserve">
+    <value>Provide nCodTitulo or cCodIntTitulo.</value>
+  </data>
+  <data name="OmieReturnedStatusXWithoutDescription" xml:space="preserve">
+    <value>Omie returned status {0} without description. Check the operation configuration in the Omie panel.</value>
+  </data>
+  <data name="UnknownErrorFromOmie" xml:space="preserve">
+    <value>Unknown error from Omie API.</value>
   </data>
 </root>

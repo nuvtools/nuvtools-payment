@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
 /// <summary>
-/// Resposta de erro padrao da API Omie.
+/// Standard error response from the Omie API.
 /// </summary>
 internal class OmieErrorResponse
 {
