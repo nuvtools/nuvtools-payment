@@ -5,151 +5,152 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuvTools.Common.ResultWrapper;
+using NuvTools.Payment.Contracts;
+using NuvTools.Payment.Models.BankSlip;
 using NuvTools.Payment.Omie.ApiClient.Configuration;
 using NuvTools.Payment.Omie.ApiClient.Contracts;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
+using NuvTools.Payment.Omie.ApiClient.Mapping;
 using NuvTools.Payment.Omie.ApiClient.Resources;
 
 namespace NuvTools.Payment.Omie.ApiClient.Services;
 
 /// <summary>
-/// Default implementation of the Omie API client.
+/// Default implementation of the Omie API client. Satisfies both the ERP-shaped
+/// <see cref="IOmieApiClient"/> contract and the neutral <see cref="IBankSlipBilletQuery"/>.
 /// </summary>
 public class OmieApiClient(
-    HttpClient httpClient,
     IOptions<OmieApiClientConfig> options,
     ILogger<OmieApiClient> logger) : IOmieApiClient
 {
     private readonly OmieApiClientConfig _config = options.Value;
 
-    // Static HttpClient (no factory, no Polly resilience) — the factory-injected
-    // httpClient was triggering generic SOAP "Bad Request" responses from Omie's
-    // gateway. Bypassing it solves the issue for all calls.
-    // The factory-injected `httpClient` parameter is retained for backwards compat
-    // but is not used.
+    // DO NOT register a typed HttpClient or AddStandardResilienceHandler for this client.
+    // Omie's gateway returned generic SOAP "Bad Request" / "Consumo redundante" responses
+    // when requests went through HttpClientFactory + Polly: HTTP/2 negotiation and Polly's
+    // retry of duplicated successful requests both trip the gateway. The static client
+    // below is the workaround — it forces HTTP/1.1 (see SendRawAsync) and bypasses the
+    // resilience pipeline. The DI registration in DependencyInjection.cs reflects this:
+    // the service is registered as a singleton with no typed HttpClient.
     private static readonly HttpClient _staticClient = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         // No PropertyNamingPolicy — Omie field names are explicit via [JsonPropertyName]
-        // attributes on DTOs and verbatim on anonymous request envelopes (call, app_key,
-        // app_secret, param). A naming policy here can mangle envelope keys.
+        // attributes on DTOs and verbatim on JsonObject envelope keys (call, app_key,
+        // app_secret, param). A naming policy here would mangle envelope keys.
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public async Task<OmieApiResult<bool>> ConsultClientAsync(long omieClientCode, CancellationToken cancellationToken = default)
+    public async Task<IResult<bool>> ConsultClientAsync(long omieClientCode, CancellationToken cancellationToken = default)
     {
-        var request = BuildRequest(Fields.ConsultClient, new[] { new { codigo_cliente_omie = omieClientCode } });
+        var request = BuildRequest(Fields.ConsultClient, new JsonArray(new JsonObject { ["codigo_cliente_omie"] = omieClientCode }));
 
         var response = await SendAsync(request, _config.BaseUrlClient, cancellationToken);
 
         if (response == null)
-            return OmieApiResult<bool>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieClient));
+            return Result<bool>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieClient), logger: logger);
 
         if (response.IsSuccessStatusCode)
-            return OmieApiResult<bool>.Success(true);
+            return Result<bool>.Success(true);
 
         var errorMessage = await ParseErrorAsync(response, cancellationToken);
-        logger.LogWarning("Omie ConsultClient failed for code {OmieClientCode}: {Error}", omieClientCode, errorMessage);
-        return OmieApiResult<bool>.Fail(errorMessage);
+        return Result<bool>.Fail($"Omie ConsultarCliente failed for code {omieClientCode}: {errorMessage}", logger: logger);
     }
 
-    public async Task<OmieApiResult<ConsultServiceRegistrationResponse>> ConsultServiceRegistrationAsync(long omieServiceCode, CancellationToken cancellationToken = default)
+    public async Task<IResult<ConsultServiceRegistrationResponse>> ConsultServiceRegistrationAsync(long omieServiceCode, CancellationToken cancellationToken = default)
     {
-        // Body built literally to match the Omie template byte-for-byte (field order:
-        // call, param, app_key, app_secret). cCodIntServ must be present as null.
-        var literalJson = $$"""
-            {"call":"{{Fields.ConsultServiceRegistration}}","param":[{"cCodIntServ":null,"nCodServ":{{omieServiceCode}}}],"app_key":"{{_config.AppKey}}","app_secret":"{{_config.AppSecret}}"}
-            """;
+        // Omie expects the envelope in the order: call, param, app_key, app_secret.
+        // JsonObject preserves insertion order on serialize — DO NOT switch to anonymous
+        // objects (their key order has tripped Omie before) or string interpolation
+        // (JSON-injection risk on credentials with quotes/control chars).
+        var paramItem = new JsonObject
+        {
+            ["cCodIntServ"] = null,
+            ["nCodServ"] = omieServiceCode
+        };
+        var envelope = new JsonObject
+        {
+            ["call"] = Fields.ConsultServiceRegistration,
+            ["param"] = new JsonArray(paramItem),
+            ["app_key"] = _config.AppKey,
+            ["app_secret"] = _config.AppSecret
+        };
+        var json = envelope.ToJsonString(JsonOptions);
 
-        var response = await SendRawAsync(literalJson, _config.BaseUrlService, cancellationToken);
+        var response = await SendRawAsync(json, _config.BaseUrlService, cancellationToken);
 
         if (response == null)
-            return OmieApiResult<ConsultServiceRegistrationResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieService));
+            return Result<ConsultServiceRegistrationResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieService), logger: logger);
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             var errorMessage = ParseError(responseBody);
-            return OmieApiResult<ConsultServiceRegistrationResponse>.Fail(
-                $"[HTTP {(int)response.StatusCode}] {errorMessage}");
+            return Result<ConsultServiceRegistrationResponse>.Fail(
+                $"[HTTP {(int)response.StatusCode}] Omie ConsultarCadastroServico failed for service {omieServiceCode}: {errorMessage}",
+                logger: logger);
         }
 
         var result = JsonSerializer.Deserialize<ConsultServiceRegistrationResponse>(responseBody, JsonOptions);
 
-        if (result == null)
-            return OmieApiResult<ConsultServiceRegistrationResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.ConsultServiceRegistration));
-
-        return OmieApiResult<ConsultServiceRegistrationResponse>.Success(result);
+        return result == null
+            ? Result<ConsultServiceRegistrationResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.ConsultServiceRegistration), logger: logger)
+            : Result<ConsultServiceRegistrationResponse>.Success(result);
     }
 
-    public async Task<OmieApiResult<IncludeOSResponse>> IncludeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
+    public async Task<IResult<IncludeOSResponse>> IncludeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
     {
-        var request = BuildRequest(Fields.IncludeOS, new[] { param });
-
-        var response = await SendAsync(request, _config.BaseUrlOrderService, cancellationToken);
-
-        if (response == null)
-            return OmieApiResult<IncludeOSResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenIncludingOmieWorkOrder));
-
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorMessage = ParseError(responseBody);
-            logger.LogWarning("Omie IncluirOS failed: {Error}", errorMessage);
-            return OmieApiResult<IncludeOSResponse>.Fail(errorMessage);
-        }
-
-        var result = JsonSerializer.Deserialize<IncludeOSResponse>(responseBody, JsonOptions);
-
-        if (result == null)
-            return OmieApiResult<IncludeOSResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.IncludeOS));
-
-        var (osIsFailure, osErrorMessage) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, Fields.IncludeOS);
-        if (osIsFailure)
-            return OmieApiResult<IncludeOSResponse>.Fail(osErrorMessage);
-
-        return OmieApiResult<IncludeOSResponse>.Success(result);
+        return await ExecuteOmieOperationAsync<IncludeOSResponse>(
+            Fields.IncludeOS,
+            new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
+            _config.BaseUrlOrderService,
+            Messages.WhenIncludingOmieWorkOrder,
+            cancellationToken);
     }
 
-    public async Task<OmieApiResult<IncludeReceivableResponse>> IncludeReceivableAsync(IncludeReceivableParam param, CancellationToken cancellationToken = default)
+    public async Task<IResult<IncludeReceivableResponse>> IncludeReceivableAsync(IncludeReceivableParam param, CancellationToken cancellationToken = default)
     {
-        var request = BuildRequest(Fields.IncludeReceivable, new[] { param });
-
-        var response = await SendAsync(request, _config.BaseUrlReceivable, cancellationToken);
-
-        if (response == null)
-            return OmieApiResult<IncludeReceivableResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenIncludingOmieReceivable));
-
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorMessage = ParseError(responseBody);
-            logger.LogWarning("Omie IncluirContaReceber failed for integration key {IntegrationKey}: {Error}", param.IntegrationEntryCode, errorMessage);
-            return OmieApiResult<IncludeReceivableResponse>.Fail(errorMessage);
-        }
-
-        var result = JsonSerializer.Deserialize<IncludeReceivableResponse>(responseBody, JsonOptions);
-
-        if (result == null)
-            return OmieApiResult<IncludeReceivableResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.IncludeReceivable));
-
-        var (receivableIsFailure, receivableErrorMessage) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, Fields.IncludeReceivable);
-        if (receivableIsFailure)
-            return OmieApiResult<IncludeReceivableResponse>.Fail(receivableErrorMessage);
-
-        return OmieApiResult<IncludeReceivableResponse>.Success(result);
+        return await ExecuteOmieOperationAsync<IncludeReceivableResponse>(
+            Fields.IncludeReceivable,
+            new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
+            _config.BaseUrlReceivable,
+            Messages.WhenIncludingOmieReceivable,
+            cancellationToken);
     }
 
-    public async Task<OmieApiResult<GenerateBilletResponse>> GenerateBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
+    public Task<IResult<GenerateBilletResponse>> GenerateBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
+        => ExecuteBilletOperationAsync<GenerateBilletResponse>(Fields.GenerateBillet, nCodTitulo, cCodIntTitulo, Messages.WhenGeneratingOmieBillet, cancellationToken);
+
+    public Task<IResult<GetBilletResponse>> GetBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
+        => ExecuteBilletOperationAsync<GetBilletResponse>(Fields.GetBillet, nCodTitulo, cCodIntTitulo, Messages.WhenGettingOmieBillet, cancellationToken);
+
+    #region IBankSlipBilletQuery (neutral surface)
+
+    async Task<IResult<BankSlipBilletInfo>> IBankSlipBilletQuery.GetBilletAsync(BilletReference reference, CancellationToken cancellationToken)
+    {
+        var result = await GetBilletAsync(reference.OmieNumericId, reference.OmieIntegrationCode, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlipBilletInfo>.Success(result.Data.ToNeutral())
+            : Result<BankSlipBilletInfo>.Fail(result.Message ?? "GetBillet failed.");
+    }
+
+    #endregion
+
+    private async Task<IResult<TResponse>> ExecuteBilletOperationAsync<TResponse>(
+        string operation,
+        long? nCodTitulo,
+        string? cCodIntTitulo,
+        string failureContext,
+        CancellationToken cancellationToken)
+        where TResponse : IOmieBusinessStatus
     {
         if (nCodTitulo is null && string.IsNullOrWhiteSpace(cCodIntTitulo))
-            return OmieApiResult<GenerateBilletResponse>.Fail(Messages.ProvideTituloIdentifier);
+            return Result<TResponse>.Fail(Messages.ProvideTituloIdentifier, logger: logger);
 
         // Omie [103]: "Preencha apenas a tag [nCodTitulo] ou a tag [cCodIntTitulo]".
         // Both keys must be present, but EXACTLY ONE filled — the other as literal null.
@@ -165,91 +166,66 @@ public class OmieApiClient(
             param["nCodTitulo"] = null;
             param["cCodIntTitulo"] = cCodIntTitulo;
         }
-        var request = BuildRequest(Fields.GenerateBillet, new JsonArray(param));
 
-        var response = await SendAsync(request, _config.BaseUrlBilletReceivable, cancellationToken);
+        return await ExecuteOmieOperationAsync<TResponse>(
+            operation,
+            new JsonArray(param),
+            _config.BaseUrlBilletReceivable,
+            failureContext,
+            cancellationToken);
+    }
+
+    private async Task<IResult<TResponse>> ExecuteOmieOperationAsync<TResponse>(
+        string operation,
+        JsonArray param,
+        string url,
+        string failureContext,
+        CancellationToken cancellationToken)
+        where TResponse : IOmieBusinessStatus
+    {
+        var request = BuildRequest(operation, param);
+
+        var response = await SendAsync(request, url, cancellationToken);
 
         if (response == null)
-            return OmieApiResult<GenerateBilletResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenGeneratingOmieBillet));
+            return Result<TResponse>.Fail(string.Format(Messages.FailedCommunicationX, failureContext), logger: logger);
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             var errorMessage = ParseError(responseBody);
-            return OmieApiResult<GenerateBilletResponse>.Fail($"[HTTP {(int)response.StatusCode}] {errorMessage}");
+            return Result<TResponse>.Fail($"[HTTP {(int)response.StatusCode}] Omie {operation}: {errorMessage}", logger: logger);
         }
 
-        var result = JsonSerializer.Deserialize<GenerateBilletResponse>(responseBody, JsonOptions);
+        var result = JsonSerializer.Deserialize<TResponse>(responseBody, JsonOptions);
 
         if (result == null)
-            return OmieApiResult<GenerateBilletResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.GenerateBillet));
+            return Result<TResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, operation), logger: logger);
 
-        var (billetIsFailure, billetErrorMessage) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, Fields.GenerateBillet);
-        if (billetIsFailure)
-            return OmieApiResult<GenerateBilletResponse>.Fail(billetErrorMessage);
-
-        return OmieApiResult<GenerateBilletResponse>.Success(result);
+        var (isFailure, errorBody) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, operation);
+        return isFailure
+            ? Result<TResponse>.Fail(errorBody, logger: logger)
+            : Result<TResponse>.Success(result);
     }
 
-    public async Task<OmieApiResult<GetBilletResponse>> GetBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
+    private JsonObject BuildRequest(string call, JsonArray param)
     {
-        if (nCodTitulo is null && string.IsNullOrWhiteSpace(cCodIntTitulo))
-            return OmieApiResult<GetBilletResponse>.Fail(Messages.ProvideTituloIdentifier);
-
-        // Same rule as GerarBoleto: exactly one identifier filled, the other literal null.
-        var param = new JsonObject();
-        if (nCodTitulo.HasValue)
+        // Same envelope shape as ConsultServiceRegistrationAsync — JsonObject preserves
+        // insertion order so the canonical (call, param, app_key, app_secret) sequence
+        // is stable. Anonymous objects worked but their key order is fragile across runtimes.
+        return new JsonObject
         {
-            param["nCodTitulo"] = nCodTitulo.Value;
-            param["cCodIntTitulo"] = null;
-        }
-        else
-        {
-            param["nCodTitulo"] = null;
-            param["cCodIntTitulo"] = cCodIntTitulo;
-        }
-        var request = BuildRequest(Fields.GetBillet, new JsonArray(param));
-
-        var response = await SendAsync(request, _config.BaseUrlBilletReceivable, cancellationToken);
-
-        if (response == null)
-            return OmieApiResult<GetBilletResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenGettingOmieBillet));
-
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorMessage = ParseError(responseBody);
-            return OmieApiResult<GetBilletResponse>.Fail($"[HTTP {(int)response.StatusCode}] {errorMessage}");
-        }
-
-        var result = JsonSerializer.Deserialize<GetBilletResponse>(responseBody, JsonOptions);
-
-        if (result == null)
-            return OmieApiResult<GetBilletResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, Fields.GetBillet));
-
-        var (getBilletIsFailure, getBilletErrorMessage) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, Fields.GetBillet);
-        if (getBilletIsFailure)
-            return OmieApiResult<GetBilletResponse>.Fail(getBilletErrorMessage);
-
-        return OmieApiResult<GetBilletResponse>.Success(result);
-    }
-
-    private object BuildRequest<T>(string call, T param)
-    {
-        return new
-        {
-            call,
-            app_key = _config.AppKey,
-            app_secret = _config.AppSecret,
-            param
+            ["call"] = call,
+            ["param"] = param,
+            ["app_key"] = _config.AppKey,
+            ["app_secret"] = _config.AppSecret
         };
     }
 
-    private async Task<HttpResponseMessage?> SendAsync(object requestBody, string url, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage?> SendAsync(JsonObject requestBody, string url, CancellationToken cancellationToken)
     {
-        var json = JsonSerializer.Serialize(requestBody, JsonOptions);
+        var json = requestBody.ToJsonString(JsonOptions);
         return await SendRawAsync(json, url, cancellationToken);
     }
 
@@ -273,10 +249,6 @@ public class OmieApiClient(
 
         try
         {
-            // Use the static HttpClient (no factory, no Polly resilience). The
-            // factory-injected client triggered Omie's "Consumo redundante" / SOAP
-            // "Bad Request" responses because Polly retries duplicated successful
-            // requests on transient blips.
             return await _staticClient.SendAsync(httpRequest, cancellationToken);
         }
         catch (Exception ex)

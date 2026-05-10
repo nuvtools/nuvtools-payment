@@ -1,25 +1,19 @@
+using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Requests;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Responses;
+using NuvTools.Payment.Contracts;
 
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient.Contracts;
 
 /// <summary>
-/// Interface para comunicacao com a API de pagamentos de boleto do Banco do Brasil.
+/// Banco do Brasil bank slip batch payment API contract — exposes the raw provider DTOs.
+/// Implementations also satisfy <see cref="IBankSlipBatchPaymentClient"/> for portable callers.
 /// </summary>
-public interface IBbBankSlipPaymentApiClient
+public interface IBbBankSlipPaymentApiClient : IBankSlipBatchPaymentClient
 {
-    /// <summary>
-    /// Gera um token de acesso OAuth2 via client_credentials.
-    /// </summary>
-    Task<BbApiResult<BbAccessTokenResponse>> GenerateAccessTokenAsync(string scope, CancellationToken cancellationToken = default);
+    Task<IResult<BbAccessTokenResponse>> GenerateAccessTokenAsync(string scope, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Cria um lote de pagamentos de boleto.
-    /// </summary>
-    Task<BbApiResult<CreateBatchPaymentResponse>> CreateBatchPaymentAsync(CreateBatchPaymentRequest request, CancellationToken cancellationToken = default);
+    Task<IResult<CreateBatchPaymentResponse>> CreateBatchPaymentAsync(CreateBatchPaymentRequest request, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Consulta um pagamento pelo ID.
-    /// </summary>
-    Task<BbApiResult<BankSlipPaymentResponse>> GetPaymentAsync(long paymentId, string agency, string account, string digit, CancellationToken cancellationToken = default);
+    Task<IResult<BankSlipPaymentResponse>> GetPaymentAsync(long paymentId, string agency, string account, string digit, CancellationToken cancellationToken = default);
 }

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
-public class GenerateBilletResponse
+public class GenerateBilletResponse : IOmieBusinessStatus
 {
     [JsonPropertyName("nCodTitulo")]
     public long TitleCode { get; set; }

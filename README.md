@@ -104,12 +104,23 @@ services.AddOmieApiClient(configuration);
 
 ## Common Patterns
 
-All API clients share the same architecture:
+All API clients share the same architecture, defined in `NuvTools.Payment`:
 
-- **Typed HttpClient** registered via `IServiceCollection` extension methods
-- **Result pattern** (`BbApiResult<T>`, `SicoobApiResult<T>`, `OmieApiResult<T>`) with `Succeeded`, `Data`, and `ErrorMessage` properties
-- **Standard resilience** via `Microsoft.Extensions.Http.Resilience` (retry, circuit breaker, timeouts)
-- **Configuration binding** from `IConfiguration` sections using the Options pattern
+- **Result pattern**: every method returns `IResult<T>` from `NuvTools.Common.ResultWrapper` (`Succeeded`, `Data`, `Message`, `Messages`, `ResultType`).
+- **Standard resilience**: registered via `services.AddPaymentResilientHttpClient<TInterface, TImpl>(name)` — applies retry, circuit breaker, and timeout policy across all providers.
+- **Configuration binding** from `IConfiguration` sections using the Options pattern.
+
+Two-tier API:
+
+- **Provider-neutral contracts** in `NuvTools.Payment.Contracts` — portable code targets these:
+  - `IBankSlipIssuanceClient` (Sicoob) — issue/get/list/cancel/extend/change bank slips.
+  - `IBankSlipBatchPaymentClient` (Banco do Brasil) — authenticate, create batch, query batch.
+  - `IBankSlipBilletQuery` (Omie) — retrieve billet info from an existing receivable.
+- **Provider-specific contracts** in each `*.ApiClient` package (e.g. `ISicoobBankSlipApiClient`, `IBbBankSlipPaymentApiClient`, `IOmieApiClient`) — inherit the neutral contract and additionally expose raw provider DTOs and provider-only fields (e.g. Sicoob's `codigoNegativacao`, Omie's full ERP workflow).
+
+Both interfaces resolve to the same instance, so use whichever fits the call site.
+
+> **Note (Omie):** `OmieApiClient` is registered as a singleton and uses an internal static `HttpClient`. It intentionally bypasses `HttpClientFactory` and the standard resilience pipeline — Omie's gateway misbehaves with HTTP/2 and Polly retry. Do not change this without re-validating against the Omie sandbox.
 
 ## Build
 

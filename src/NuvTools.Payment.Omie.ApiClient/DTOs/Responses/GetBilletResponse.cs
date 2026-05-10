@@ -7,7 +7,7 @@ namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 /// details after GerarBoleto. Note Omie uses "cDesStatus" (without the second "c")
 /// in the billet endpoints.
 /// </summary>
-public class GetBilletResponse
+public class GetBilletResponse : IOmieBusinessStatus
 {
     [JsonPropertyName("nCodTitulo")]
     public long TitleCode { get; set; }

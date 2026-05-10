@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Configuration;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Contracts;
+using NuvTools.Payment.Contracts;
+using NuvTools.Payment.Extensions;
 
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient;
 
@@ -21,18 +22,10 @@ public static class DependencyInjection
         services.Configure<BancoDoBrasilApiClientConfig>(
             configuration.GetSection(BancoDoBrasilApiClientConfig.SectionName));
 
-        services.AddHttpClient<IBbBankSlipPaymentApiClient, Services.BbBankSlipPaymentApiClient>(HttpClientName)
-            .AddStandardResilienceHandler(ConfigureResilience);
+        services.AddPaymentResilientHttpClient<IBbBankSlipPaymentApiClient, Services.BbBankSlipPaymentApiClient>(HttpClientName);
+
+        services.AddTransient<IBankSlipBatchPaymentClient>(sp => sp.GetRequiredService<IBbBankSlipPaymentApiClient>());
 
         return services;
-    }
-
-    private static void ConfigureResilience(HttpStandardResilienceOptions opts)
-    {
-        opts.Retry.MaxRetryAttempts = 2;
-        opts.Retry.Delay = TimeSpan.FromSeconds(1);
-        opts.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-        opts.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-        opts.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
     }
 }

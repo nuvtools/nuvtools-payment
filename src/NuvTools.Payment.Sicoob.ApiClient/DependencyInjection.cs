@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
+using NuvTools.Payment.Contracts;
+using NuvTools.Payment.Extensions;
 using NuvTools.Payment.Sicoob.ApiClient.Configuration;
 using NuvTools.Payment.Sicoob.ApiClient.Contracts;
 
@@ -21,18 +22,10 @@ public static class DependencyInjection
         services.Configure<SicoobApiClientConfig>(
             configuration.GetSection(SicoobApiClientConfig.SectionName));
 
-        services.AddHttpClient<ISicoobBankSlipApiClient, Services.SicoobBankSlipApiClient>(HttpClientName)
-            .AddStandardResilienceHandler(ConfigureResilience);
+        services.AddPaymentResilientHttpClient<ISicoobBankSlipApiClient, Services.SicoobBankSlipApiClient>(HttpClientName);
+
+        services.AddTransient<IBankSlipIssuanceClient>(sp => sp.GetRequiredService<ISicoobBankSlipApiClient>());
 
         return services;
-    }
-
-    private static void ConfigureResilience(HttpStandardResilienceOptions opts)
-    {
-        opts.Retry.MaxRetryAttempts = 2;
-        opts.Retry.Delay = TimeSpan.FromSeconds(1);
-        opts.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-        opts.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-        opts.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
     }
 }

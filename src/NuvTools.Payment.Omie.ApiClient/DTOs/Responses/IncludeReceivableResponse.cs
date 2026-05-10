@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
-public class IncludeReceivableResponse
+public class IncludeReceivableResponse : IOmieBusinessStatus
 {
     [JsonPropertyName("codigo_lancamento_omie")]
     public long OmieEntryCode { get; set; }

@@ -3,15 +3,22 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Configuration;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Contracts;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Requests;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Responses;
+using NuvTools.Payment.BancoDoBrasil.ApiClient.Mapping;
+using NuvTools.Payment.Contracts;
+using NuvTools.Payment.Models.BatchPayment;
+using NuvTools.Payment.Models.Common;
 
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient.Services;
 
 /// <summary>
-/// Implementacao do cliente da API de pagamentos de boleto do Banco do Brasil.
+/// Banco do Brasil bank slip batch payment API implementation. Satisfies both the
+/// provider-specific <see cref="IBbBankSlipPaymentApiClient"/> contract and the neutral
+/// <see cref="IBankSlipBatchPaymentClient"/> via mapping.
 /// </summary>
 public class BbBankSlipPaymentApiClient(
     HttpClient httpClient,
@@ -26,7 +33,7 @@ public class BbBankSlipPaymentApiClient(
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<BbApiResult<BbAccessTokenResponse>> GenerateAccessTokenAsync(string scope, CancellationToken cancellationToken = default)
+    public async Task<IResult<BbAccessTokenResponse>> GenerateAccessTokenAsync(string scope, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -44,25 +51,21 @@ public class BbBankSlipPaymentApiClient(
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("BB GenerateAccessToken falhou: {StatusCode} - {Body}", response.StatusCode, responseBody);
-                return BbApiResult<BbAccessTokenResponse>.Fail($"Erro ao gerar token BB: {response.StatusCode} - {responseBody}");
-            }
+                return Result<BbAccessTokenResponse>.Fail($"Erro ao gerar token BB: {response.StatusCode} - {responseBody}", logger: logger);
 
             var result = JsonSerializer.Deserialize<BbAccessTokenResponse>(responseBody, JsonOptions);
 
             return result?.AccessToken != null
-                ? BbApiResult<BbAccessTokenResponse>.Success(result)
-                : BbApiResult<BbAccessTokenResponse>.Fail("Resposta invalida da API BB (GenerateAccessToken).");
+                ? Result<BbAccessTokenResponse>.Success(result)
+                : Result<BbAccessTokenResponse>.Fail("Resposta invalida da API BB (GenerateAccessToken).", logger: logger);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao gerar token de acesso no BB.");
-            return BbApiResult<BbAccessTokenResponse>.Fail($"Erro ao comunicar com API BB: {ex.Message}");
+            return Result<BbAccessTokenResponse>.Fail(ex, logger: logger);
         }
     }
 
-    public async Task<BbApiResult<CreateBatchPaymentResponse>> CreateBatchPaymentAsync(CreateBatchPaymentRequest request, CancellationToken cancellationToken = default)
+    public async Task<IResult<CreateBatchPaymentResponse>> CreateBatchPaymentAsync(CreateBatchPaymentRequest request, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/pagamentos-lote/boletos";
 
@@ -77,25 +80,21 @@ public class BbBankSlipPaymentApiClient(
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("BB CreateBatchPayment falhou: {StatusCode} - {Body}", response.StatusCode, responseBody);
-                return BbApiResult<CreateBatchPaymentResponse>.Fail($"Erro ao criar lote de pagamento BB: {response.StatusCode} - {responseBody}");
-            }
+                return Result<CreateBatchPaymentResponse>.Fail($"Erro ao criar lote de pagamento BB: {response.StatusCode} - {responseBody}", logger: logger);
 
             var result = JsonSerializer.Deserialize<CreateBatchPaymentResponse>(responseBody, JsonOptions);
 
             return result != null
-                ? BbApiResult<CreateBatchPaymentResponse>.Success(result)
-                : BbApiResult<CreateBatchPaymentResponse>.Fail("Resposta invalida da API BB (CreateBatchPayment).");
+                ? Result<CreateBatchPaymentResponse>.Success(result)
+                : Result<CreateBatchPaymentResponse>.Fail("Resposta invalida da API BB (CreateBatchPayment).", logger: logger);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao criar lote de pagamento no BB.");
-            return BbApiResult<CreateBatchPaymentResponse>.Fail($"Erro ao comunicar com API BB: {ex.Message}");
+            return Result<CreateBatchPaymentResponse>.Fail(ex, logger: logger);
         }
     }
 
-    public async Task<BbApiResult<BankSlipPaymentResponse>> GetPaymentAsync(long paymentId, string agency, string account, string digit, CancellationToken cancellationToken = default)
+    public async Task<IResult<BankSlipPaymentResponse>> GetPaymentAsync(long paymentId, string agency, string account, string digit, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/pagamentos-lote/boletos/{paymentId}?agencia={agency}&conta={account}&digitoConta={digit}";
 
@@ -108,23 +107,48 @@ public class BbBankSlipPaymentApiClient(
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("BB GetPayment falhou para ID {PaymentId}: {StatusCode} - {Body}", paymentId, response.StatusCode, responseBody);
-                return BbApiResult<BankSlipPaymentResponse>.Fail($"Erro ao consultar pagamento BB: {response.StatusCode} - {responseBody}");
-            }
+                return Result<BankSlipPaymentResponse>.Fail($"Erro ao consultar pagamento BB: {response.StatusCode} - {responseBody}", logger: logger);
 
             var result = JsonSerializer.Deserialize<BankSlipPaymentResponse>(responseBody, JsonOptions);
 
             return result != null
-                ? BbApiResult<BankSlipPaymentResponse>.Success(result)
-                : BbApiResult<BankSlipPaymentResponse>.Fail("Resposta invalida da API BB (GetPayment).");
+                ? Result<BankSlipPaymentResponse>.Success(result)
+                : Result<BankSlipPaymentResponse>.Fail("Resposta invalida da API BB (GetPayment).", logger: logger);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao consultar pagamento {PaymentId} no BB.", paymentId);
-            return BbApiResult<BankSlipPaymentResponse>.Fail($"Erro ao comunicar com API BB: {ex.Message}");
+            return Result<BankSlipPaymentResponse>.Fail(ex, logger: logger);
         }
     }
+
+    #region IBankSlipBatchPaymentClient (neutral surface)
+
+    async Task<IResult<AccessToken>> IBankSlipBatchPaymentClient.AuthenticateAsync(string scope, CancellationToken cancellationToken)
+    {
+        var result = await GenerateAccessTokenAsync(scope, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<AccessToken>.Success(result.Data.ToNeutral())
+            : Result<AccessToken>.Fail(result.Message ?? "GenerateAccessToken failed.");
+    }
+
+    async Task<IResult<BankSlipBatchPaymentResult>> IBankSlipBatchPaymentClient.CreateBatchAsync(BankSlipBatchPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var bbRequest = request.ToBb();
+        var result = await CreateBatchPaymentAsync(bbRequest, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlipBatchPaymentResult>.Success(result.Data.ToNeutral())
+            : Result<BankSlipBatchPaymentResult>.Fail(result.Message ?? "CreateBatchPayment failed.");
+    }
+
+    async Task<IResult<BankSlipBatchPaymentStatus>> IBankSlipBatchPaymentClient.GetBatchAsync(BankSlipBatchPaymentReference reference, CancellationToken cancellationToken)
+    {
+        var result = await GetPaymentAsync(reference.PaymentId, reference.Agency, reference.Account, reference.AccountDigit, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlipBatchPaymentStatus>.Success(result.Data.ToNeutral())
+            : Result<BankSlipBatchPaymentStatus>.Fail(result.Message ?? "GetPayment failed.");
+    }
+
+    #endregion
 
     private void ConfigureAuthenticatedHeaders(HttpRequestMessage request)
     {

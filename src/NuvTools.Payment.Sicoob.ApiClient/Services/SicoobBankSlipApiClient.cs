@@ -2,15 +2,21 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuvTools.Common.ResultWrapper;
+using NuvTools.Payment.Contracts;
+using NuvTools.Payment.Models.BankSlip;
 using NuvTools.Payment.Sicoob.ApiClient.Configuration;
 using NuvTools.Payment.Sicoob.ApiClient.Contracts;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Responses;
+using NuvTools.Payment.Sicoob.ApiClient.Mapping;
 
 namespace NuvTools.Payment.Sicoob.ApiClient.Services;
 
 /// <summary>
-/// Implementacao do cliente da API de boletos do Sicoob.
+/// Sicoob bank slip API implementation. Satisfies both the provider-specific
+/// <see cref="ISicoobBankSlipApiClient"/> contract and the neutral
+/// <see cref="IBankSlipIssuanceClient"/> via mapping.
 /// </summary>
 public class SicoobBankSlipApiClient(
     HttpClient httpClient,
@@ -25,13 +31,13 @@ public class SicoobBankSlipApiClient(
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<SicoobApiResult<BankSlipResponse>> GetBankSlipAsync(int customerNumber, int modalityCode, long ourNumber, CancellationToken cancellationToken = default)
+    public async Task<IResult<BankSlipResponse>> GetBankSlipAsync(int customerNumber, int modalityCode, long ourNumber, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos?numeroCliente={customerNumber}&codigoModalidade={modalityCode}&nossoNumero={ourNumber}";
         return await GetWithResultadoAsync<BankSlipResponse>(url, "GetBankSlip", cancellationToken);
     }
 
-    public async Task<SicoobApiResult<List<BankSlipResponse>>> ListBankSlipsByPeriodAsync(string payerDocument, int customerNumber, DateOnly startDate, DateOnly endDate, int statusCode, CancellationToken cancellationToken = default)
+    public async Task<IResult<List<BankSlipResponse>>> ListBankSlipsByPeriodAsync(string payerDocument, int customerNumber, DateOnly startDate, DateOnly endDate, int statusCode, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos?numeroCliente={customerNumber}&codigoSituacao={statusCode}" +
                   $"&dataInicio={startDate:yyyy-MM-dd}&dataFim={endDate:yyyy-MM-dd}" +
@@ -39,13 +45,13 @@ public class SicoobBankSlipApiClient(
         return await GetWithResultadoAsync<List<BankSlipResponse>>(url, "ListBankSlipsByPeriod", cancellationToken);
     }
 
-    public async Task<SicoobApiResult<SecondCopyBankSlipResponse>> GetSecondCopyAsync(int customerNumber, int modalityCode, long ourNumber, CancellationToken cancellationToken = default)
+    public async Task<IResult<SecondCopyBankSlipResponse>> GetSecondCopyAsync(int customerNumber, int modalityCode, long ourNumber, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos/segunda-via?numeroCliente={customerNumber}&codigoModalidade={modalityCode}&nossoNumero={ourNumber}";
         return await GetWithResultadoAsync<SecondCopyBankSlipResponse>(url, "GetSecondCopy", cancellationToken);
     }
 
-    public async Task<SicoobApiResult<CreateBankSlipResponse>> CreateBankSlipAsync(CreateBankSlipRequest request, CancellationToken cancellationToken = default)
+    public async Task<IResult<CreateBankSlipResponse>> CreateBankSlipAsync(CreateBankSlipRequest request, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos";
 
@@ -60,40 +66,108 @@ public class SicoobBankSlipApiClient(
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("Sicoob CreateBankSlip falhou: {StatusCode} - {Body}", response.StatusCode, responseBody);
-                return SicoobApiResult<CreateBankSlipResponse>.Fail($"Erro ao criar boleto Sicoob: {response.StatusCode} - {responseBody}");
-            }
+                return Result<CreateBankSlipResponse>.Fail($"Erro ao criar boleto Sicoob: {response.StatusCode} - {responseBody}", logger: logger);
 
             var result = ExtractResultado<CreateBankSlipResponse>(responseBody);
             return result != null
-                ? SicoobApiResult<CreateBankSlipResponse>.Success(result)
-                : SicoobApiResult<CreateBankSlipResponse>.Fail("Resposta invalida da API Sicoob (CreateBankSlip).");
+                ? Result<CreateBankSlipResponse>.Success(result)
+                : Result<CreateBankSlipResponse>.Fail("Resposta invalida da API Sicoob (CreateBankSlip).", logger: logger);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao criar boleto no Sicoob.");
-            return SicoobApiResult<CreateBankSlipResponse>.Fail($"Erro ao comunicar com API Sicoob: {ex.Message}");
+            return Result<CreateBankSlipResponse>.Fail(ex, logger: logger);
         }
     }
 
-    public async Task<SicoobApiResult<bool>> CancelBankSlipAsync(long ourNumber, CancelBankSlipRequest request, CancellationToken cancellationToken = default)
+    public async Task<IResult> CancelBankSlipAsync(long ourNumber, CancelBankSlipRequest request, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos/{ourNumber}/baixa";
         return await PostCommandAsync(url, request, "CancelBankSlip", cancellationToken);
     }
 
-    public async Task<SicoobApiResult<bool>> ExtendDueDateAsync(long ourNumber, ExtendDueDateRequest request, CancellationToken cancellationToken = default)
+    public async Task<IResult> ExtendDueDateAsync(long ourNumber, ExtendDueDateRequest request, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos/{ourNumber}/prorrogacao";
         return await PostCommandAsync(url, request, "ExtendDueDate", cancellationToken);
     }
 
-    public async Task<SicoobApiResult<bool>> ChangeAmountAsync(long ourNumber, ChangeAmountRequest request, CancellationToken cancellationToken = default)
+    public async Task<IResult> ChangeAmountAsync(long ourNumber, ChangeAmountRequest request, CancellationToken cancellationToken = default)
     {
         var url = $"{_config.BaseUrl}/boletos/{ourNumber}/valor";
         return await PostCommandAsync(url, request, "ChangeAmount", cancellationToken);
     }
+
+    #region IBankSlipIssuanceClient (neutral surface)
+
+    async Task<IResult<BankSlip>> IBankSlipIssuanceClient.CreateAsync(BankSlipCreateRequest request, CancellationToken cancellationToken)
+    {
+        var sicoobRequest = request.ToSicoob();
+        var result = await CreateBankSlipAsync(sicoobRequest, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlip>.Success(result.Data.ToNeutral(request.Reference))
+            : Result<BankSlip>.Fail(result.Message ?? "CreateBankSlip failed.");
+    }
+
+    async Task<IResult<BankSlip>> IBankSlipIssuanceClient.GetAsync(BankSlipQuery query, CancellationToken cancellationToken)
+    {
+        var result = await GetBankSlipAsync(query.ClientNumber, query.ModalityCode, query.OurNumber, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlip>.Success(result.Data.ToNeutral())
+            : Result<BankSlip>.Fail(result.Message ?? "GetBankSlip failed.");
+    }
+
+    async Task<IResult<IReadOnlyList<BankSlip>>> IBankSlipIssuanceClient.ListByPeriodAsync(BankSlipPeriodQuery query, CancellationToken cancellationToken)
+    {
+        var result = await ListBankSlipsByPeriodAsync(query.PayerDocument, query.ClientNumber, query.StartDate, query.EndDate, query.StatusCode, cancellationToken);
+        return result.Succeeded && result.Data is not null
+            ? Result<IReadOnlyList<BankSlip>>.Success(result.Data.ConvertAll(static s => s.ToNeutral()))
+            : Result<IReadOnlyList<BankSlip>>.Fail(result.Message ?? "ListBankSlipsByPeriod failed.");
+    }
+
+    async Task<IResult<BankSlipSecondCopy>> IBankSlipIssuanceClient.GetSecondCopyAsync(BankSlipQuery query, CancellationToken cancellationToken)
+    {
+        var result = await GetSecondCopyAsync(query.ClientNumber, query.ModalityCode, query.OurNumber, cancellationToken);
+        var reference = new BankSlipReference
+        {
+            ClientNumber = query.ClientNumber,
+            ModalityCode = query.ModalityCode,
+            OurNumber = query.OurNumber
+        };
+        return result.Succeeded && result.Data is not null
+            ? Result<BankSlipSecondCopy>.Success(result.Data.ToNeutral(reference))
+            : Result<BankSlipSecondCopy>.Fail(result.Message ?? "GetSecondCopy failed.");
+    }
+
+    Task<IResult> IBankSlipIssuanceClient.CancelAsync(BankSlipReference reference, CancellationToken cancellationToken)
+    {
+        return CancelBankSlipAsync(reference.OurNumber, new CancelBankSlipRequest
+        {
+            NumeroCliente = reference.ClientNumber,
+            CodigoModalidade = reference.ModalityCode
+        }, cancellationToken);
+    }
+
+    Task<IResult> IBankSlipIssuanceClient.ExtendDueDateAsync(BankSlipReference reference, DateOnly newDueDate, CancellationToken cancellationToken)
+    {
+        return ExtendDueDateAsync(reference.OurNumber, new ExtendDueDateRequest
+        {
+            NumeroCliente = reference.ClientNumber,
+            CodigoModalidade = reference.ModalityCode,
+            DataVencimento = newDueDate.ToString("yyyy-MM-dd")
+        }, cancellationToken);
+    }
+
+    Task<IResult> IBankSlipIssuanceClient.ChangeAmountAsync(BankSlipReference reference, decimal newAmount, CancellationToken cancellationToken)
+    {
+        return ChangeAmountAsync(reference.OurNumber, new ChangeAmountRequest
+        {
+            NumeroCliente = reference.ClientNumber,
+            CodigoModalidade = reference.ModalityCode,
+            Valor = newAmount
+        }, cancellationToken);
+    }
+
+    #endregion
 
     private void ConfigureHeaders(HttpRequestMessage request)
     {
@@ -101,7 +175,7 @@ public class SicoobBankSlipApiClient(
         request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {_config.Token}");
     }
 
-    private async Task<SicoobApiResult<T>> GetWithResultadoAsync<T>(string url, string operation, CancellationToken cancellationToken)
+    private async Task<IResult<T>> GetWithResultadoAsync<T>(string url, string operation, CancellationToken cancellationToken)
     {
         try
         {
@@ -112,24 +186,20 @@ public class SicoobBankSlipApiClient(
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("Sicoob {Operation} falhou: {StatusCode} - {Body}", operation, response.StatusCode, responseBody);
-                return SicoobApiResult<T>.Fail($"Erro na API Sicoob ({operation}): {response.StatusCode} - {responseBody}");
-            }
+                return Result<T>.Fail($"Erro na API Sicoob ({operation}): {response.StatusCode} - {responseBody}", logger: logger);
 
             var result = ExtractResultado<T>(responseBody);
             return result != null
-                ? SicoobApiResult<T>.Success(result)
-                : SicoobApiResult<T>.Fail($"Resposta invalida da API Sicoob ({operation}).");
+                ? Result<T>.Success(result)
+                : Result<T>.Fail($"Resposta invalida da API Sicoob ({operation}).", logger: logger);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao executar {Operation} no Sicoob.", operation);
-            return SicoobApiResult<T>.Fail($"Erro ao comunicar com API Sicoob: {ex.Message}");
+            return Result<T>.Fail(ex, logger: logger);
         }
     }
 
-    private async Task<SicoobApiResult<bool>> PostCommandAsync(string url, object body, string operation, CancellationToken cancellationToken)
+    private async Task<IResult> PostCommandAsync(string url, object body, string operation, CancellationToken cancellationToken)
     {
         try
         {
@@ -143,16 +213,14 @@ public class SicoobBankSlipApiClient(
             if (!response.IsSuccessStatusCode)
             {
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                logger.LogWarning("Sicoob {Operation} falhou: {StatusCode} - {Body}", operation, response.StatusCode, responseBody);
-                return SicoobApiResult<bool>.Fail($"Erro na API Sicoob ({operation}): {response.StatusCode} - {responseBody}");
+                return Result.Fail($"Erro na API Sicoob ({operation}): {response.StatusCode} - {responseBody}", logger: logger);
             }
 
-            return SicoobApiResult<bool>.Success(true);
+            return Result.Success();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro ao executar {Operation} no Sicoob.", operation);
-            return SicoobApiResult<bool>.Fail($"Erro ao comunicar com API Sicoob: {ex.Message}");
+            return Result.Fail(ex, logger: logger);
         }
     }
 
