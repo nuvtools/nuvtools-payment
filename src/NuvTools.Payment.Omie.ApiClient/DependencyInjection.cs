@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NuvTools.Payment.Contracts;
 using NuvTools.Payment.Omie.ApiClient.Configuration;
 using NuvTools.Payment.Omie.ApiClient.Contracts;
 
@@ -26,7 +25,6 @@ public static class DependencyInjection
             configuration.GetSection(OmieApiClientConfig.SectionName));
 
         services.AddSingleton<IOmieApiClient, Services.OmieApiClient>();
-        services.AddSingleton<IBankSlipBilletQuery>(sp => sp.GetRequiredService<IOmieApiClient>());
 
         return services;
     }

@@ -1,15 +1,13 @@
 using NuvTools.Common.ResultWrapper;
-using NuvTools.Payment.Contracts;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
 namespace NuvTools.Payment.Omie.ApiClient.Contracts;
 
 /// <summary>
-/// Interface for communication with the Omie ERP API. The implementation also satisfies
-/// <see cref="IBankSlipBilletQuery"/> for portable billet retrieval.
+/// Interface for communication with the Omie ERP API.
 /// </summary>
-public interface IOmieApiClient : IBankSlipBilletQuery
+public interface IOmieApiClient
 {
     /// <summary>
     /// Checks whether a client exists in Omie by its code.

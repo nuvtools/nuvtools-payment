@@ -6,20 +6,16 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuvTools.Common.ResultWrapper;
-using NuvTools.Payment.Contracts;
-using NuvTools.Payment.Models.BankSlip;
 using NuvTools.Payment.Omie.ApiClient.Configuration;
 using NuvTools.Payment.Omie.ApiClient.Contracts;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
-using NuvTools.Payment.Omie.ApiClient.Mapping;
 using NuvTools.Payment.Omie.ApiClient.Resources;
 
 namespace NuvTools.Payment.Omie.ApiClient.Services;
 
 /// <summary>
-/// Default implementation of the Omie API client. Satisfies both the ERP-shaped
-/// <see cref="IOmieApiClient"/> contract and the neutral <see cref="IBankSlipBilletQuery"/>.
+/// Default implementation of the Omie ERP API client.
 /// </summary>
 public class OmieApiClient(
     IOptions<OmieApiClientConfig> options,
@@ -128,18 +124,6 @@ public class OmieApiClient(
 
     public Task<IResult<GetBilletResponse>> GetBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
         => ExecuteBilletOperationAsync<GetBilletResponse>(Fields.GetBillet, nCodTitulo, cCodIntTitulo, Messages.WhenGettingOmieBillet, cancellationToken);
-
-    #region IBankSlipBilletQuery (neutral surface)
-
-    async Task<IResult<BankSlipBilletInfo>> IBankSlipBilletQuery.GetBilletAsync(BilletReference reference, CancellationToken cancellationToken)
-    {
-        var result = await GetBilletAsync(reference.OmieNumericId, reference.OmieIntegrationCode, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlipBilletInfo>.Success(result.Data.ToNeutral())
-            : Result<BankSlipBilletInfo>.Fail(result.Message ?? "GetBillet failed.");
-    }
-
-    #endregion
 
     private async Task<IResult<TResponse>> ExecuteBilletOperationAsync<TResponse>(
         string operation,

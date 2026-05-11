@@ -3,20 +3,15 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuvTools.Common.ResultWrapper;
-using NuvTools.Payment.Contracts;
-using NuvTools.Payment.Models.BankSlip;
 using NuvTools.Payment.Sicoob.ApiClient.Configuration;
 using NuvTools.Payment.Sicoob.ApiClient.Contracts;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Responses;
-using NuvTools.Payment.Sicoob.ApiClient.Mapping;
 
 namespace NuvTools.Payment.Sicoob.ApiClient.Services;
 
 /// <summary>
-/// Sicoob bank slip API implementation. Satisfies both the provider-specific
-/// <see cref="ISicoobBankSlipApiClient"/> contract and the neutral
-/// <see cref="IBankSlipIssuanceClient"/> via mapping.
+/// Sicoob bank slip API implementation.
 /// </summary>
 public class SicoobBankSlipApiClient(
     HttpClient httpClient,
@@ -96,78 +91,6 @@ public class SicoobBankSlipApiClient(
         var url = $"{_config.BaseUrl}/boletos/{ourNumber}/valor";
         return await PostCommandAsync(url, request, "ChangeAmount", cancellationToken);
     }
-
-    #region IBankSlipIssuanceClient (neutral surface)
-
-    async Task<IResult<BankSlip>> IBankSlipIssuanceClient.CreateAsync(BankSlipCreateRequest request, CancellationToken cancellationToken)
-    {
-        var sicoobRequest = request.ToSicoob();
-        var result = await CreateBankSlipAsync(sicoobRequest, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlip>.Success(result.Data.ToNeutral(request.Reference))
-            : Result<BankSlip>.Fail(result.Message ?? "CreateBankSlip failed.");
-    }
-
-    async Task<IResult<BankSlip>> IBankSlipIssuanceClient.GetAsync(BankSlipQuery query, CancellationToken cancellationToken)
-    {
-        var result = await GetBankSlipAsync(query.ClientNumber, query.ModalityCode, query.OurNumber, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlip>.Success(result.Data.ToNeutral())
-            : Result<BankSlip>.Fail(result.Message ?? "GetBankSlip failed.");
-    }
-
-    async Task<IResult<IReadOnlyList<BankSlip>>> IBankSlipIssuanceClient.ListByPeriodAsync(BankSlipPeriodQuery query, CancellationToken cancellationToken)
-    {
-        var result = await ListBankSlipsByPeriodAsync(query.PayerDocument, query.ClientNumber, query.StartDate, query.EndDate, query.StatusCode, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<IReadOnlyList<BankSlip>>.Success(result.Data.ConvertAll(static s => s.ToNeutral()))
-            : Result<IReadOnlyList<BankSlip>>.Fail(result.Message ?? "ListBankSlipsByPeriod failed.");
-    }
-
-    async Task<IResult<BankSlipSecondCopy>> IBankSlipIssuanceClient.GetSecondCopyAsync(BankSlipQuery query, CancellationToken cancellationToken)
-    {
-        var result = await GetSecondCopyAsync(query.ClientNumber, query.ModalityCode, query.OurNumber, cancellationToken);
-        var reference = new BankSlipReference
-        {
-            ClientNumber = query.ClientNumber,
-            ModalityCode = query.ModalityCode,
-            OurNumber = query.OurNumber
-        };
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlipSecondCopy>.Success(result.Data.ToNeutral(reference))
-            : Result<BankSlipSecondCopy>.Fail(result.Message ?? "GetSecondCopy failed.");
-    }
-
-    Task<IResult> IBankSlipIssuanceClient.CancelAsync(BankSlipReference reference, CancellationToken cancellationToken)
-    {
-        return CancelBankSlipAsync(reference.OurNumber, new CancelBankSlipRequest
-        {
-            NumeroCliente = reference.ClientNumber,
-            CodigoModalidade = reference.ModalityCode
-        }, cancellationToken);
-    }
-
-    Task<IResult> IBankSlipIssuanceClient.ExtendDueDateAsync(BankSlipReference reference, DateOnly newDueDate, CancellationToken cancellationToken)
-    {
-        return ExtendDueDateAsync(reference.OurNumber, new ExtendDueDateRequest
-        {
-            NumeroCliente = reference.ClientNumber,
-            CodigoModalidade = reference.ModalityCode,
-            DataVencimento = newDueDate.ToString("yyyy-MM-dd")
-        }, cancellationToken);
-    }
-
-    Task<IResult> IBankSlipIssuanceClient.ChangeAmountAsync(BankSlipReference reference, decimal newAmount, CancellationToken cancellationToken)
-    {
-        return ChangeAmountAsync(reference.OurNumber, new ChangeAmountRequest
-        {
-            NumeroCliente = reference.ClientNumber,
-            CodigoModalidade = reference.ModalityCode,
-            Valor = newAmount
-        }, cancellationToken);
-    }
-
-    #endregion
 
     private void ConfigureHeaders(HttpRequestMessage request)
     {

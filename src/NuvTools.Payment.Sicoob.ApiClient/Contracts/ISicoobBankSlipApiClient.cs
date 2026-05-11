@@ -1,15 +1,13 @@
 using NuvTools.Common.ResultWrapper;
-using NuvTools.Payment.Contracts;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Requests;
 using NuvTools.Payment.Sicoob.ApiClient.DTOs.Responses;
 
 namespace NuvTools.Payment.Sicoob.ApiClient.Contracts;
 
 /// <summary>
-/// Sicoob bank slip API contract — exposes the raw provider DTOs.
-/// Implementations also satisfy <see cref="IBankSlipIssuanceClient"/> for portable callers.
+/// Sicoob bank slip API contract.
 /// </summary>
-public interface ISicoobBankSlipApiClient : IBankSlipIssuanceClient
+public interface ISicoobBankSlipApiClient
 {
     Task<IResult<BankSlipResponse>> GetBankSlipAsync(int customerNumber, int modalityCode, long ourNumber, CancellationToken cancellationToken = default);
 

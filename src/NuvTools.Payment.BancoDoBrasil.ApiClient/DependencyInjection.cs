@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Configuration;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Contracts;
-using NuvTools.Payment.Contracts;
 using NuvTools.Payment.Extensions;
 
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient;
@@ -23,8 +22,6 @@ public static class DependencyInjection
             configuration.GetSection(BancoDoBrasilApiClientConfig.SectionName));
 
         services.AddPaymentResilientHttpClient<IBbBankSlipPaymentApiClient, Services.BbBankSlipPaymentApiClient>(HttpClientName);
-
-        services.AddTransient<IBankSlipBatchPaymentClient>(sp => sp.GetRequiredService<IBbBankSlipPaymentApiClient>());
 
         return services;
     }

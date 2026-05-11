@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NuvTools.Payment.Contracts;
 using NuvTools.Payment.Extensions;
 using NuvTools.Payment.Sicoob.ApiClient.Configuration;
 using NuvTools.Payment.Sicoob.ApiClient.Contracts;
@@ -23,8 +22,6 @@ public static class DependencyInjection
             configuration.GetSection(SicoobApiClientConfig.SectionName));
 
         services.AddPaymentResilientHttpClient<ISicoobBankSlipApiClient, Services.SicoobBankSlipApiClient>(HttpClientName);
-
-        services.AddTransient<IBankSlipIssuanceClient>(sp => sp.GetRequiredService<ISicoobBankSlipApiClient>());
 
         return services;
     }

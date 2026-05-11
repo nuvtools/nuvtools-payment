@@ -8,17 +8,11 @@ using NuvTools.Payment.BancoDoBrasil.ApiClient.Configuration;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.Contracts;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Requests;
 using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Responses;
-using NuvTools.Payment.BancoDoBrasil.ApiClient.Mapping;
-using NuvTools.Payment.Contracts;
-using NuvTools.Payment.Models.BatchPayment;
-using NuvTools.Payment.Models.Common;
 
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient.Services;
 
 /// <summary>
-/// Banco do Brasil bank slip batch payment API implementation. Satisfies both the
-/// provider-specific <see cref="IBbBankSlipPaymentApiClient"/> contract and the neutral
-/// <see cref="IBankSlipBatchPaymentClient"/> via mapping.
+/// Banco do Brasil bank slip batch payment API implementation.
 /// </summary>
 public class BbBankSlipPaymentApiClient(
     HttpClient httpClient,
@@ -120,35 +114,6 @@ public class BbBankSlipPaymentApiClient(
             return Result<BankSlipPaymentResponse>.Fail(ex, logger: logger);
         }
     }
-
-    #region IBankSlipBatchPaymentClient (neutral surface)
-
-    async Task<IResult<AccessToken>> IBankSlipBatchPaymentClient.AuthenticateAsync(string scope, CancellationToken cancellationToken)
-    {
-        var result = await GenerateAccessTokenAsync(scope, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<AccessToken>.Success(result.Data.ToNeutral())
-            : Result<AccessToken>.Fail(result.Message ?? "GenerateAccessToken failed.");
-    }
-
-    async Task<IResult<BankSlipBatchPaymentResult>> IBankSlipBatchPaymentClient.CreateBatchAsync(BankSlipBatchPaymentRequest request, CancellationToken cancellationToken)
-    {
-        var bbRequest = request.ToBb();
-        var result = await CreateBatchPaymentAsync(bbRequest, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlipBatchPaymentResult>.Success(result.Data.ToNeutral())
-            : Result<BankSlipBatchPaymentResult>.Fail(result.Message ?? "CreateBatchPayment failed.");
-    }
-
-    async Task<IResult<BankSlipBatchPaymentStatus>> IBankSlipBatchPaymentClient.GetBatchAsync(BankSlipBatchPaymentReference reference, CancellationToken cancellationToken)
-    {
-        var result = await GetPaymentAsync(reference.PaymentId, reference.Agency, reference.Account, reference.AccountDigit, cancellationToken);
-        return result.Succeeded && result.Data is not null
-            ? Result<BankSlipBatchPaymentStatus>.Success(result.Data.ToNeutral())
-            : Result<BankSlipBatchPaymentStatus>.Fail(result.Message ?? "GetPayment failed.");
-    }
-
-    #endregion
 
     private void ConfigureAuthenticatedHeaders(HttpRequestMessage request)
     {
