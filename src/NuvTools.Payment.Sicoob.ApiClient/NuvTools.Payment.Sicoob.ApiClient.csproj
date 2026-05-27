@@ -1,11 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>NuvTools.Payment.Sicoob.ApiClient</RootNamespace>
+	  <TargetFramework>net10.0</TargetFramework>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <Authors>Nuv Tools</Authors>
+	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
+	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
+	  <Description>Typed HTTP client for the Sicoob banking API. Supports bank slip (boleto) query (single and by period), creation, second-copy retrieval, cancellation, due-date extension, and amount change. Returns NuvTools.Common ResultWrapper results.</Description>
+	  <Version>10.0.8</Version>
+	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+	  <PackageIcon>icon.png</PackageIcon>
+	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
+	  <RepositoryUrl>https://github.com/nuvtools/nuvtools-payment</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <AnalysisLevel>latest</AnalysisLevel>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageTags>NuvTools Payment Sicoob ApiClient Brazil Boleto BankSlip Banking</PackageTags>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <Nullable>enable</Nullable>
+	  <RootNamespace>NuvTools.Payment.Sicoob.ApiClient</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png">
+      <Link>icon.png</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\LICENSE">
+      <Link>LICENSE</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NuvTools.Payment\NuvTools.Payment.csproj" />

@@ -1,18 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>NuvTools.Payment.Omie.ApiClient</RootNamespace>
+	  <TargetFrameworks>net10.0</TargetFrameworks>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <Authors>Nuv Tools</Authors>
+	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
+	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
+	  <Description>Typed HTTP client for the Omie ERP API. Supports client lookup, service registration query, service order (OS) creation, accounts receivable entries, and bank slip (boleto) generation. Returns NuvTools.Common ResultWrapper results.</Description>
+	  <Version>10.0.8</Version>
+	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+	  <PackageIcon>icon.png</PackageIcon>
+	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
+	  <RepositoryUrl>https://github.com/nuvtools/nuvtools-payment</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <AnalysisLevel>latest</AnalysisLevel>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageTags>NuvTools Payment Omie ERP ApiClient Brazil Boleto Receivable ServiceOrder Invoicing</PackageTags>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuvTools.Common" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.7" />
+    <None Include="..\..\icon.png">
+      <Link>icon.png</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\LICENSE">
+      <Link>LICENSE</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NuvTools.Common" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
   </ItemGroup>
 
   <ItemGroup>

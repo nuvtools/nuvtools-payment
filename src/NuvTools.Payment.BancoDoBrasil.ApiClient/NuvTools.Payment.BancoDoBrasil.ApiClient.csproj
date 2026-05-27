@@ -1,11 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>NuvTools.Payment.BancoDoBrasil.ApiClient</RootNamespace>
+	  <TargetFramework>net10.0</TargetFramework>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <Authors>Nuv Tools</Authors>
+	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
+	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
+	  <Description>Typed HTTP client for the Banco do Brasil Payments API. Supports OAuth2 token generation (client_credentials), batch bank slip (boleto) payment creation, and payment query. Returns NuvTools.Common ResultWrapper results.</Description>
+	  <Version>10.0.8</Version>
+	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+	  <PackageIcon>icon.png</PackageIcon>
+	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
+	  <RepositoryUrl>https://github.com/nuvtools/nuvtools-payment</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <AnalysisLevel>latest</AnalysisLevel>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageTags>NuvTools Payment BancoDoBrasil BB ApiClient Brazil Boleto BankSlip Banking OAuth2</PackageTags>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <Nullable>enable</Nullable>
+	  <RootNamespace>NuvTools.Payment.BancoDoBrasil.ApiClient</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png">
+      <Link>icon.png</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\LICENSE">
+      <Link>LICENSE</Link>
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NuvTools.Payment\NuvTools.Payment.csproj" />

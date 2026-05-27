@@ -9,7 +9,7 @@ Payment abstraction library and API clients for Brazilian financial services. Pa
 | **NuvTools.Payment** | net8.0, net9.0, net10.0 | Core payment abstractions for credit card, bank payment slip and other operations. |
 | **NuvTools.Payment.BancoDoBrasil.ApiClient** | net10.0 | API client for Banco do Brasil bank slip payment services. |
 | **NuvTools.Payment.Sicoob.ApiClient** | net10.0 | API client for Sicoob bank slip services. |
-| **NuvTools.Payment.Omie.ApiClient** | net10.0 | API client for Omie ERP invoicing and service order services. |
+| **NuvTools.Payment.Omie.ApiClient** | net10.0 | API client for Omie ERP: service orders, accounts receivable, and bank slip (boleto) generation. |
 
 ## NuvTools.Payment.BancoDoBrasil.ApiClient
 
@@ -72,14 +72,15 @@ services.AddSicoobApiClient(configuration);
 
 ## NuvTools.Payment.Omie.ApiClient
 
-Typed HTTP client for the Omie ERP API (service orders and invoicing).
+Typed HTTP client for the Omie ERP API (service orders, accounts receivable, and bank slip issuance).
 
 ### Features
 
 - Client lookup
 - Service registration query
-- Service order creation
-- Service order invoicing
+- Service order (OS) creation
+- Accounts receivable entry creation
+- Bank slip (boleto) generation and retrieval
 
 ### Configuration
 
