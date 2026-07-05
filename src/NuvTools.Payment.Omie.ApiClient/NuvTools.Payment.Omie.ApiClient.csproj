@@ -40,6 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="NuvTools.Payment.Omie.ApiClient.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NuvTools.Common" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />

@@ -91,4 +91,25 @@
   <data name="UnknownErrorFromOmie" xml:space="preserve">
     <value>Unknown error from Omie API.</value>
   </data>
+  <data name="WhenConsultingOmieContract" xml:space="preserve">
+    <value>when consulting Omie contract</value>
+  </data>
+  <data name="WhenListingOmieServices" xml:space="preserve">
+    <value>when listing Omie services</value>
+  </data>
+  <data name="WhenListingOmieCategories" xml:space="preserve">
+    <value>when listing Omie categories</value>
+  </data>
+  <data name="WhenChangingOmieWorkOrder" xml:space="preserve">
+    <value>when changing Omie service order</value>
+  </data>
+  <data name="WhenConsultingOmieWorkOrder" xml:space="preserve">
+    <value>when consulting Omie service order</value>
+  </data>
+  <data name="WhenChangingOmieWorkOrderStage" xml:space="preserve">
+    <value>when changing Omie service order stage</value>
+  </data>
+  <data name="WhenListingOmieBillingStages" xml:space="preserve">
+    <value>when listing Omie billing stages</value>
+  </data>
 </root>

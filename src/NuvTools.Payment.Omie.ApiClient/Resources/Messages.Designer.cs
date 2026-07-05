@@ -158,5 +158,68 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
                 return ResourceManager.GetString("WhenIncludingOmieWorkOrder", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when consulting Omie contract.
+        /// </summary>
+        public static string WhenConsultingOmieContract {
+            get {
+                return ResourceManager.GetString("WhenConsultingOmieContract", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when listing Omie services.
+        /// </summary>
+        public static string WhenListingOmieServices {
+            get {
+                return ResourceManager.GetString("WhenListingOmieServices", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when listing Omie categories.
+        /// </summary>
+        public static string WhenListingOmieCategories {
+            get {
+                return ResourceManager.GetString("WhenListingOmieCategories", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when changing Omie service order.
+        /// </summary>
+        public static string WhenChangingOmieWorkOrder {
+            get {
+                return ResourceManager.GetString("WhenChangingOmieWorkOrder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when consulting Omie service order.
+        /// </summary>
+        public static string WhenConsultingOmieWorkOrder {
+            get {
+                return ResourceManager.GetString("WhenConsultingOmieWorkOrder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when changing Omie service order stage.
+        /// </summary>
+        public static string WhenChangingOmieWorkOrderStage {
+            get {
+                return ResourceManager.GetString("WhenChangingOmieWorkOrderStage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when listing Omie billing stages.
+        /// </summary>
+        public static string WhenListingOmieBillingStages {
+            get {
+                return ResourceManager.GetString("WhenListingOmieBillingStages", resourceCulture);
+            }
+        }
     }
 }

@@ -23,6 +23,26 @@ public class OmieApiClient(
 {
     private readonly OmieApiClientConfig _config = options.Value;
 
+    // Canonical Omie endpoints for the calls added for the OS-upsert flow — same across all accounts.
+    // Used only when the corresponding BaseUrl is not set in config.
+    private const string DefaultContractUrl = "https://app.omie.com.br/api/v1/servicos/contrato/";
+    private const string DefaultOrderStagesUrl = "https://app.omie.com.br/api/v1/servicos/osetapas/";
+    private const string DefaultCategoryUrl = "https://app.omie.com.br/api/v1/geral/categorias/";
+
+    // Throttle for batch runs: limits concurrent in-flight Omie requests (default 1 = sequential).
+    private readonly SemaphoreSlim _throttle = new(Math.Max(1, options.Value.MaxConcurrentRequests));
+
+    private string ContractUrl => string.IsNullOrWhiteSpace(_config.BaseUrlContract) ? DefaultContractUrl : _config.BaseUrlContract;
+    private string OrderStagesUrl => string.IsNullOrWhiteSpace(_config.BaseUrlOrderStages) ? DefaultOrderStagesUrl : _config.BaseUrlOrderStages;
+    private string CategoryUrl => string.IsNullOrWhiteSpace(_config.BaseUrlCategory) ? DefaultCategoryUrl : _config.BaseUrlCategory;
+
+    /// <summary>Test-only constructor: routes sends through a mock <see cref="HttpMessageHandler"/>.</summary>
+    internal OmieApiClient(IOptions<OmieApiClientConfig> options, ILogger<OmieApiClient> logger, HttpMessageHandler handler)
+        : this(options, logger)
+    {
+        _httpClient = new HttpClient(handler);
+    }
+
     // DO NOT register a typed HttpClient or AddStandardResilienceHandler for this client.
     // Omie's gateway returned generic SOAP "Bad Request" / "Consumo redundante" responses
     // when requests went through HttpClientFactory + Polly: HTTP/2 negotiation and Polly's
@@ -30,7 +50,11 @@ public class OmieApiClient(
     // below is the workaround — it forces HTTP/1.1 (see SendRawAsync) and bypasses the
     // resilience pipeline. The DI registration in DependencyInjection.cs reflects this:
     // the service is registered as a singleton with no typed HttpClient.
-    private static readonly HttpClient _staticClient = new();
+    private static readonly HttpClient _sharedClient = new();
+
+    // Instance send client — defaults to the shared static client in production. Tests inject a mock
+    // HttpMessageHandler through the internal constructor below (the only seam; there is no typed HttpClient).
+    private HttpClient _httpClient = _sharedClient;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -118,6 +142,82 @@ public class OmieApiClient(
             Messages.WhenIncludingOmieReceivable,
             cancellationToken);
     }
+
+    public Task<IResult<ConsultContractResponse>> ConsultContractAsync(long omieContractCode, CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ConsultContractResponse>(
+            Fields.ConsultContract,
+            new JsonArray(new JsonObject { ["nCodCtr"] = omieContractCode }),
+            ContractUrl,
+            Messages.WhenConsultingOmieContract,
+            cancellationToken);
+
+    public Task<IResult<ListServiceRegistrationResponse>> ListServiceRegistrationAsync(int page = 1, int recordsPerPage = 50, CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ListServiceRegistrationResponse>(
+            Fields.ListServiceRegistration,
+            // servicos/servico ListarCadastroServico pages with nPagina/nRegPorPagina.
+            new JsonArray(new JsonObject { ["nPagina"] = page, ["nRegPorPagina"] = recordsPerPage }),
+            _config.BaseUrlService,
+            Messages.WhenListingOmieServices,
+            cancellationToken);
+
+    public Task<IResult<ListCategoryRegistrationResponse>> ListCategoryRegistrationAsync(int page = 1, int recordsPerPage = 1000, string description = "", CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ListCategoryRegistrationResponse>(
+            Fields.ListCategoryRegistration,
+            new JsonArray(new JsonObject { ["pagina"] = page, ["registros_por_pagina"] = recordsPerPage, ["descricao"] = description }),
+            CategoryUrl,
+            Messages.WhenListingOmieCategories,
+            cancellationToken);
+
+    public Task<IResult<IncludeOSResponse>> ChangeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<IncludeOSResponse>(
+            Fields.ChangeOS,
+            new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
+            _config.BaseUrlOrderService,
+            Messages.WhenChangingOmieWorkOrder,
+            cancellationToken);
+
+    public Task<IResult<ConsultOSResponse>> ConsultOSAsync(long? nCodOS = null, string? cCodIntOS = null, CancellationToken cancellationToken = default)
+    {
+        if (nCodOS is null && string.IsNullOrWhiteSpace(cCodIntOS))
+            return Task.FromResult<IResult<ConsultOSResponse>>(
+                Result<ConsultOSResponse>.Fail("Provide nCodOS or cCodIntOS.", logger: logger));
+
+        // Both keys present, exactly one filled (same rule as the billet lookups).
+        var param = new JsonObject();
+        if (nCodOS.HasValue)
+        {
+            param["nCodOS"] = nCodOS.Value;
+            param["cCodIntOS"] = null;
+        }
+        else
+        {
+            param["nCodOS"] = null;
+            param["cCodIntOS"] = cCodIntOS;
+        }
+
+        return ExecuteOmieOperationAsync<ConsultOSResponse>(
+            Fields.ConsultOS,
+            new JsonArray(param),
+            _config.BaseUrlOrderService,
+            Messages.WhenConsultingOmieWorkOrder,
+            cancellationToken);
+    }
+
+    public Task<IResult<ChangeOSStageResponse>> ChangeOSStageAsync(ChangeOSStageParam param, CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ChangeOSStageResponse>(
+            Fields.ChangeOSStage,
+            new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
+            _config.BaseUrlOrderService,
+            Messages.WhenChangingOmieWorkOrderStage,
+            cancellationToken);
+
+    public Task<IResult<ListBillingStagesResponse>> ListBillingStagesAsync(CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ListBillingStagesResponse>(
+            Fields.ListBillingStages,
+            new JsonArray(new JsonObject { ["pagina"] = 1, ["registros_por_pagina"] = 100 }),
+            OrderStagesUrl,
+            Messages.WhenListingOmieBillingStages,
+            cancellationToken);
 
     public Task<IResult<GenerateBilletResponse>> GenerateBilletAsync(long? nCodTitulo = null, string? cCodIntTitulo = null, CancellationToken cancellationToken = default)
         => ExecuteBilletOperationAsync<GenerateBilletResponse>(Fields.GenerateBillet, nCodTitulo, cCodIntTitulo, Messages.WhenGeneratingOmieBillet, cancellationToken);
@@ -215,31 +315,76 @@ public class OmieApiClient(
 
     private async Task<HttpResponseMessage?> SendRawAsync(string json, string url, CancellationToken cancellationToken)
     {
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
-        // Force HTTP/1.1 — Omie's gateway returns generic SOAP "Bad Request" when
-        // the request arrives over HTTP/2 (curl works because it negotiated 1.1 too).
-        httpRequest.Version = HttpVersion.Version11;
-        httpRequest.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-        // Content-Type exactly "application/json" (no ;charset=utf-8). StringContent's
-        // overload would add the charset suffix which Omie's AWS ALB rejects.
+        // Content-Type exactly "application/json" (no ;charset=utf-8). StringContent's overload would add the
+        // charset suffix which Omie's AWS ALB rejects. Reused across retry attempts (fresh request per attempt).
         var bodyBytes = Encoding.UTF8.GetBytes(json);
-        httpRequest.Content = new ByteArrayContent(bodyBytes);
-        httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        var maxAttempts = Math.Max(1, _config.MaxRetryAttempts + 1);
 
-        // Curl always sends a User-Agent; some gateways behave differently without one.
-        if (!httpRequest.Headers.Contains("User-Agent"))
-            httpRequest.Headers.UserAgent.ParseAdd("nuvtools-payment-omie/1.0");
-
+        // Throttle concurrent Omie requests (batch runs). Default 1 => strictly sequential.
+        await _throttle.WaitAsync(cancellationToken);
         try
         {
-            return await _staticClient.SendAsync(httpRequest, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error sending request to Omie API: {Url}", url);
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
+                // Force HTTP/1.1 — Omie's gateway returns generic SOAP "Bad Request" over HTTP/2.
+                httpRequest.Version = HttpVersion.Version11;
+                httpRequest.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                httpRequest.Content = new ByteArrayContent(bodyBytes);
+                httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                if (!httpRequest.Headers.Contains("User-Agent"))
+                    httpRequest.Headers.UserAgent.ParseAdd("nuvtools-payment-omie/1.0");
+
+                try
+                {
+                    var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+
+                    // Retry only transient server-side failures (5xx). 2xx and 4xx (incl. business faults) are
+                    // returned as-is. Retrying OS writes is safe: cCodIntOS makes IncluirOS idempotent and
+                    // AlterarOS replaces items wholesale.
+                    if ((int)response.StatusCode >= 500 && attempt < maxAttempts)
+                    {
+                        response.Dispose();
+                        logger.LogWarning("Omie API {Url} returned HTTP {Status} (attempt {Attempt}/{Max}); retrying.",
+                            url, (int)response.StatusCode, attempt, maxAttempts);
+                        await DelayBeforeRetryAsync(attempt, cancellationToken);
+                        continue;
+                    }
+
+                    return response;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    if (attempt < maxAttempts)
+                    {
+                        logger.LogWarning(ex, "Transient error sending to Omie API {Url} (attempt {Attempt}/{Max}); retrying.",
+                            url, attempt, maxAttempts);
+                        await DelayBeforeRetryAsync(attempt, cancellationToken);
+                        continue;
+                    }
+
+                    logger.LogError(ex, "Error sending request to Omie API: {Url}", url);
+                    return null;
+                }
+            }
+
             return null;
         }
+        finally
+        {
+            _throttle.Release();
+        }
+    }
+
+    private async Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken)
+    {
+        var delay = Math.Max(0, _config.RetryDelayMilliseconds) * attempt;
+        if (delay > 0)
+            await Task.Delay(delay, cancellationToken);
     }
 
     /// <summary>

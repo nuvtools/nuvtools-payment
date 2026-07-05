@@ -23,6 +23,11 @@ public class IncludeOSParam
 
 public class IncludeOSHeader
 {
+    // nCodOS is only sent on AlterarOS (to target the existing OS). Omitted on IncluirOS via WhenWritingNull.
+    // Reusing this header for both calls avoids duplicating the full OS item/tax tree.
+    [JsonPropertyName("nCodOS")]
+    public long? OsCode { get; set; }
+
     [JsonPropertyName("cCodIntOS")]
     public required string OsIntegrationCode { get; set; }
 

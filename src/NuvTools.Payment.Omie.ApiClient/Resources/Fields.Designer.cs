@@ -113,5 +113,68 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
                 return ResourceManager.GetString("IncludeReceivable", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ConsultarContrato.
+        /// </summary>
+        public static string ConsultContract {
+            get {
+                return ResourceManager.GetString("ConsultContract", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ListarCadastroServico.
+        /// </summary>
+        public static string ListServiceRegistration {
+            get {
+                return ResourceManager.GetString("ListServiceRegistration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ListarCategorias.
+        /// </summary>
+        public static string ListCategoryRegistration {
+            get {
+                return ResourceManager.GetString("ListCategoryRegistration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AlterarOS.
+        /// </summary>
+        public static string ChangeOS {
+            get {
+                return ResourceManager.GetString("ChangeOS", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ConsultarOS.
+        /// </summary>
+        public static string ConsultOS {
+            get {
+                return ResourceManager.GetString("ConsultOS", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to TrocarEtapaOS.
+        /// </summary>
+        public static string ChangeOSStage {
+            get {
+                return ResourceManager.GetString("ChangeOSStage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ListarEtapasFaturamento.
+        /// </summary>
+        public static string ListBillingStages {
+            get {
+                return ResourceManager.GetString("ListBillingStages", resourceCulture);
+            }
+        }
     }
 }

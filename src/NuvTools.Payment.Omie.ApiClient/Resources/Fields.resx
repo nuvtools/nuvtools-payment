@@ -76,4 +76,25 @@
   <data name="GetBillet" xml:space="preserve">
     <value>ObterBoleto</value>
   </data>
+  <data name="ConsultContract" xml:space="preserve">
+    <value>ConsultarContrato</value>
+  </data>
+  <data name="ListServiceRegistration" xml:space="preserve">
+    <value>ListarCadastroServico</value>
+  </data>
+  <data name="ListCategoryRegistration" xml:space="preserve">
+    <value>ListarCategorias</value>
+  </data>
+  <data name="ChangeOS" xml:space="preserve">
+    <value>AlterarOS</value>
+  </data>
+  <data name="ConsultOS" xml:space="preserve">
+    <value>ConsultarOS</value>
+  </data>
+  <data name="ChangeOSStage" xml:space="preserve">
+    <value>TrocarEtapaOS</value>
+  </data>
+  <data name="ListBillingStages" xml:space="preserve">
+    <value>ListarEtapasFaturamento</value>
+  </data>
 </root>
