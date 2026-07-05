@@ -23,18 +23,18 @@ public class OmieApiClient(
 {
     private readonly OmieApiClientConfig _config = options.Value;
 
-    // Canonical Omie endpoints for the calls added for the OS-upsert flow — same across all accounts.
-    // Used only when the corresponding BaseUrl is not set in config.
-    private const string DefaultContractUrl = "https://app.omie.com.br/api/v1/servicos/contrato/";
-    private const string DefaultOrderStagesUrl = "https://app.omie.com.br/api/v1/servicos/osetapas/";
-    private const string DefaultCategoryUrl = "https://app.omie.com.br/api/v1/geral/categorias/";
-
     // Throttle for batch runs: limits concurrent in-flight Omie requests (default 1 = sequential).
     private readonly SemaphoreSlim _throttle = new(Math.Max(1, options.Value.MaxConcurrentRequests));
 
-    private string ContractUrl => string.IsNullOrWhiteSpace(_config.BaseUrlContract) ? DefaultContractUrl : _config.BaseUrlContract;
-    private string OrderStagesUrl => string.IsNullOrWhiteSpace(_config.BaseUrlOrderStages) ? DefaultOrderStagesUrl : _config.BaseUrlOrderStages;
-    private string CategoryUrl => string.IsNullOrWhiteSpace(_config.BaseUrlCategory) ? DefaultCategoryUrl : _config.BaseUrlCategory;
+    // Full endpoint URLs, resolved as BaseUrl + the configured relative endpoint path.
+    private string ClientUrl => _config.ResolveUrl(_config.EndpointClient);
+    private string ServiceUrl => _config.ResolveUrl(_config.EndpointService);
+    private string OrderServiceUrl => _config.ResolveUrl(_config.EndpointOrderService);
+    private string ReceivableUrl => _config.ResolveUrl(_config.EndpointReceivable);
+    private string BilletReceivableUrl => _config.ResolveUrl(_config.EndpointBilletReceivable);
+    private string ContractUrl => _config.ResolveUrl(_config.EndpointContract);
+    private string OrderStagesUrl => _config.ResolveUrl(_config.EndpointOrderStages);
+    private string CategoryUrl => _config.ResolveUrl(_config.EndpointCategory);
 
     /// <summary>Test-only constructor: routes sends through a mock <see cref="HttpMessageHandler"/>.</summary>
     internal OmieApiClient(IOptions<OmieApiClientConfig> options, ILogger<OmieApiClient> logger, HttpMessageHandler handler)
@@ -69,7 +69,7 @@ public class OmieApiClient(
     {
         var request = BuildRequest(Fields.ConsultClient, new JsonArray(new JsonObject { ["codigo_cliente_omie"] = omieClientCode }));
 
-        var response = await SendAsync(request, _config.BaseUrlClient, cancellationToken);
+        var response = await SendAsync(request, ClientUrl, cancellationToken);
 
         if (response == null)
             return Result<bool>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieClient), logger: logger);
@@ -101,7 +101,7 @@ public class OmieApiClient(
         };
         var json = envelope.ToJsonString(JsonOptions);
 
-        var response = await SendRawAsync(json, _config.BaseUrlService, cancellationToken);
+        var response = await SendRawAsync(json, ServiceUrl, cancellationToken);
 
         if (response == null)
             return Result<ConsultServiceRegistrationResponse>.Fail(string.Format(Messages.FailedCommunicationX, Messages.WhenConsultingOmieService), logger: logger);
@@ -128,7 +128,7 @@ public class OmieApiClient(
         return await ExecuteOmieOperationAsync<IncludeOSResponse>(
             Fields.IncludeOS,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
-            _config.BaseUrlOrderService,
+            OrderServiceUrl,
             Messages.WhenIncludingOmieWorkOrder,
             cancellationToken);
     }
@@ -138,7 +138,7 @@ public class OmieApiClient(
         return await ExecuteOmieOperationAsync<IncludeReceivableResponse>(
             Fields.IncludeReceivable,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
-            _config.BaseUrlReceivable,
+            ReceivableUrl,
             Messages.WhenIncludingOmieReceivable,
             cancellationToken);
     }
@@ -156,7 +156,7 @@ public class OmieApiClient(
             Fields.ListServiceRegistration,
             // servicos/servico ListarCadastroServico pages with nPagina/nRegPorPagina.
             new JsonArray(new JsonObject { ["nPagina"] = page, ["nRegPorPagina"] = recordsPerPage }),
-            _config.BaseUrlService,
+            ServiceUrl,
             Messages.WhenListingOmieServices,
             cancellationToken);
 
@@ -172,7 +172,7 @@ public class OmieApiClient(
         => ExecuteOmieOperationAsync<IncludeOSResponse>(
             Fields.ChangeOS,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
-            _config.BaseUrlOrderService,
+            OrderServiceUrl,
             Messages.WhenChangingOmieWorkOrder,
             cancellationToken);
 
@@ -198,7 +198,7 @@ public class OmieApiClient(
         return ExecuteOmieOperationAsync<ConsultOSResponse>(
             Fields.ConsultOS,
             new JsonArray(param),
-            _config.BaseUrlOrderService,
+            OrderServiceUrl,
             Messages.WhenConsultingOmieWorkOrder,
             cancellationToken);
     }
@@ -207,7 +207,7 @@ public class OmieApiClient(
         => ExecuteOmieOperationAsync<ChangeOSStageResponse>(
             Fields.ChangeOSStage,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
-            _config.BaseUrlOrderService,
+            OrderServiceUrl,
             Messages.WhenChangingOmieWorkOrderStage,
             cancellationToken);
 
@@ -254,7 +254,7 @@ public class OmieApiClient(
         return await ExecuteOmieOperationAsync<TResponse>(
             operation,
             new JsonArray(param),
-            _config.BaseUrlBilletReceivable,
+            BilletReceivableUrl,
             failureContext,
             cancellationToken);
     }

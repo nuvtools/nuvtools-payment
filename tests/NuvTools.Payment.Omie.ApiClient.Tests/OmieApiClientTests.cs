@@ -15,12 +15,7 @@ public class OmieApiClientTests
         {
             AppKey = "k",
             AppSecret = "s",
-            BaseUrlClient = "https://omie.test/",
-            BaseUrlService = "https://omie.test/",
-            BaseUrlOrderService = "https://omie.test/",
-            BaseUrlOrderBilling = "https://omie.test/",
-            BaseUrlReceivable = "https://omie.test/",
-            BaseUrlBilletReceivable = "https://omie.test/",
+            BaseUrl = "https://omie.test/",
             MaxRetryAttempts = 0
         };
         var handler = new StubHttpMessageHandler(status, body);

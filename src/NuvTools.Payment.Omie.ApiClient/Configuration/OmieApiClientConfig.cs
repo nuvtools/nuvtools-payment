@@ -20,24 +20,40 @@ public class OmieApiClientConfig
     /// </summary>
     public string? AppHash { get; set; }
 
-    public required string BaseUrlClient { get; set; }
-    public required string BaseUrlService { get; set; }
-    public required string BaseUrlOrderService { get; set; }
-    public required string BaseUrlOrderBilling { get; set; }
-    public required string BaseUrlReceivable { get; set; }
-    public required string BaseUrlBilletReceivable { get; set; }
+    /// <summary>
+    /// Base URL shared by every Omie endpoint (e.g. <c>https://app.omie.com.br/api/v1/</c>).
+    /// The <c>Endpoint*</c> paths below are relative to it and concatenated onto it at call time.
+    /// </summary>
+    public required string BaseUrl { get; set; }
 
-    // Endpoints added for the Service Order (OS) upsert flow. Optional so existing consumers keep binding;
-    // when unset the client falls back to Omie's canonical public URLs (they are stable and the same across
-    // all accounts — only app_key/app_secret differ). Override via config only if Omie changes them.
+    // Endpoint paths relative to BaseUrl. Defaults are Omie's canonical public paths — stable and the
+    // same across all accounts (only app_key/app_secret differ). Override via config only if Omie changes them.
+    /// <summary>geral/clientes/ — cliente registration.</summary>
+    public string EndpointClient { get; set; } = "geral/clientes/";
+
+    /// <summary>servicos/servico/ — service registration/catalog.</summary>
+    public string EndpointService { get; set; } = "servicos/servico/";
+
+    /// <summary>servicos/os/ — Service Order (OS) upsert/consult.</summary>
+    public string EndpointOrderService { get; set; } = "servicos/os/";
+
+    /// <summary>servicos/osetapas/ — OS billing stages.</summary>
+    public string EndpointOrderBilling { get; set; } = "servicos/osetapas/";
+
+    /// <summary>financas/contareceber/ — receivables.</summary>
+    public string EndpointReceivable { get; set; } = "financas/contareceber/";
+
+    /// <summary>financas/contareceberboleto/ — receivable billets.</summary>
+    public string EndpointBilletReceivable { get; set; } = "financas/contareceberboleto/";
+
     /// <summary>servicos/contrato/ — ConsultarContrato (negotiated unit price per service item).</summary>
-    public string? BaseUrlContract { get; set; }
+    public string EndpointContract { get; set; } = "servicos/contrato/";
 
     /// <summary>servicos/osetapas/ — ListarEtapasFaturamento (Kanban stage discovery).</summary>
-    public string? BaseUrlOrderStages { get; set; }
+    public string EndpointOrderStages { get; set; } = "servicos/osetapas/";
 
     /// <summary>geral/categorias/ — ListarCategorias (resolve a service's cCodCateg to its category name).</summary>
-    public string? BaseUrlCategory { get; set; }
+    public string EndpointCategory { get; set; } = "geral/categorias/";
 
     // Minimal resilience knobs (this client intentionally does NOT use Polly/HttpClientFactory — see the
     // comment on OmieApiClient._staticClient). Retries cover only network failures and HTTP 5xx; the
@@ -50,4 +66,8 @@ public class OmieApiClientConfig
 
     /// <summary>Max concurrent in-flight Omie requests (throttle for batch runs). Default 1 (sequential).</summary>
     public int MaxConcurrentRequests { get; set; } = 1;
+
+    /// <summary>Combines <see cref="BaseUrl"/> with a relative endpoint path, normalizing the slash between them.</summary>
+    public string ResolveUrl(string endpoint)
+        => $"{BaseUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
 }
