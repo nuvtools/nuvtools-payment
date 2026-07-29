@@ -8,16 +8,10 @@ namespace NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 /// </summary>
 public class IncludeOSParam
 {
-    /// <summary>
-    /// OS code at the <b>root</b> of param — where AlterarOS reads it. Omie rejected an AlterarOS carrying the
-    /// identification only inside <c>cabecalho</c> ("Informe a Tag [nCodOS] ou [cCodIntOS] na alteração!"), and
-    /// then rejected <c>cCodIntOS</c> at this level ("Tag [CCODINTOS] não faz parte da estrutura do tipo
-    /// complexo [osCadastro]"): the root takes <b>only</b> the numeric code, so the alteration is targeted by
-    /// <c>nCodOS</c>. Null on IncluirOS (omitted via WhenWritingNull), where the header identifies the OS.
-    /// </summary>
-    [JsonPropertyName("nCodOS")]
-    public long? OsCode { get; set; }
-
+    // A identificação da OS vive dentro de <c>cabecalho</c>, para IncluirOS e AlterarOS. Não a coloque na raiz:
+    // o Omie recusa os dois campos ali — "Tag [CCODINTOS] não faz parte da estrutura do tipo complexo
+    // [osCadastro]" e, idem, "Tag [NCODOS] ...". Ao contrário do TrocarEtapaOS, que usa outro tipo complexo e
+    // de fato leva nCodOS/cCodIntOS na raiz do param.
     [JsonPropertyName("cabecalho")]
     public required IncludeOSHeader Header { get; set; }
 
@@ -44,8 +38,11 @@ public class IncludeOSHeader
     [JsonPropertyName("cCodParc")]
     public required string PaymentTermCode { get; set; }
 
+    // Optional in both IncluirOS and AlterarOS. Documented domain is 10/20/30/40/50 — anything else (an extra
+    // pipeline column configured in the account, for instance) is not a value this API accepts back, so on a
+    // change it is better omitted than echoed.
     [JsonPropertyName("cEtapa")]
-    public required string Stage { get; set; }
+    public string? Stage { get; set; }
 
     [JsonPropertyName("dDtPrevisao")]
     public required string ForecastDate { get; set; }
@@ -136,6 +133,11 @@ public class IncludeOSProvidedService
 
     [JsonPropertyName("nSeqItem")]
     public required int ItemSequence { get; set; }
+
+    // What AlterarOS should do with this item: "A" alter (the documented default), "E" exclude, "I" include
+    // during the change. Meaningless on IncluirOS — leave it null there and WhenWritingNull drops it.
+    [JsonPropertyName("cAcaoItem")]
+    public string? ItemAction { get; set; }
 
     [JsonPropertyName("nValorAcrescimos")]
     public decimal? AdditionsValue { get; set; }

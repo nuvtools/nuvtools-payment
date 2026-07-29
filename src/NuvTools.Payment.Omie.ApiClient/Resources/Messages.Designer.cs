@@ -196,6 +196,15 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Omie refused the service order change claiming the identification tags were not informed, although they were sent ({0}). This refusal is intermittent on Omie&apos;s side — the same request has been accepted before. Try again in a few moments. Original response: {1}.
+        /// </summary>
+        public static string OmieRefusedChangeClaimingMissingIdentification {
+            get {
+                return ResourceManager.GetString("OmieRefusedChangeClaimingMissingIdentification", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to when consulting Omie service order.
         /// </summary>
         public static string WhenConsultingOmieWorkOrder {

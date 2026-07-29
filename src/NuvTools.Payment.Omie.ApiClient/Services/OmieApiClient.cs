@@ -168,23 +168,40 @@ public class OmieApiClient(
             Messages.WhenListingOmieCategories,
             cancellationToken);
 
-    public Task<IResult<IncludeOSResponse>> ChangeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
+    // O AlterarOS identifica a OS pelos campos dentro de <c>cabecalho</c> (nCodOS e/ou cCodIntOS) — o mesmo lugar
+    // do IncluirOS. Já se tentou promovê-los para a raiz do param, como faz o TrocarEtapaOS, e o Omie recusa os
+    // dois: "Tag [CCODINTOS]/[NCODOS] não faz parte da estrutura do tipo complexo [osCadastro]".
+    public async Task<IResult<IncludeOSResponse>> ChangeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
     {
-        // AlterarOS lê a identificação da OS na raiz do param — o mesmo lugar de TrocarEtapaOS — e ali aceita
-        // somente o código numérico: com a identificação apenas no cabecalho (onde o IncluirOS a lê) o Omie
-        // responde "Informe a Tag [nCodOS] ou [cCodIntOS] na alteração!", e com cCodIntOS na raiz responde
-        // "Tag [CCODINTOS] não faz parte da estrutura do tipo complexo [osCadastro]". Por isso só nCodOS sobe
-        // para a raiz. O cabecalho segue como está: quem chama monta um payload só, e é o cliente que o adapta
-        // para cada operação.
-        param.OsCode ??= param.Header.OsCode;
-
-        return ExecuteOmieOperationAsync<IncludeOSResponse>(
+        var result = await ExecuteOmieOperationAsync<IncludeOSResponse>(
             Fields.ChangeOS,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
             OrderServiceUrl,
             Messages.WhenChangingOmieWorkOrder,
             cancellationToken);
+
+        // Recusa por "identificação não informada" com a identificação preenchida: é intermitente (ver
+        // OmieFaultClassifier). Repassar o texto cru mandaria o usuário procurar erro no pedido, que está certo —
+        // então a mensagem diz o que ele pode fazer, sem esconder a resposta original.
+        if (!result.Succeeded
+            && OmieFaultClassifier.IsMissingOrderIdentification(result.Message)
+            && HasOrderIdentification(param))
+        {
+            return Result<IncludeOSResponse>.Fail(
+                string.Format(Messages.OmieRefusedChangeClaimingMissingIdentification, DescribeIdentification(param), result.Message),
+                logger: logger);
+        }
+
+        return result;
     }
+
+    private static bool HasOrderIdentification(IncludeOSParam param)
+        => param.Header.OsCode is > 0 || !string.IsNullOrWhiteSpace(param.Header.OsIntegrationCode);
+
+    private static string DescribeIdentification(IncludeOSParam param)
+        => param.Header.OsCode is > 0
+            ? $"nCodOS {param.Header.OsCode}, cCodIntOS {param.Header.OsIntegrationCode}"
+            : $"cCodIntOS {param.Header.OsIntegrationCode}";
 
     public Task<IResult<ConsultOSResponse>> ConsultOSAsync(long? nCodOS = null, string? cCodIntOS = null, CancellationToken cancellationToken = default)
     {

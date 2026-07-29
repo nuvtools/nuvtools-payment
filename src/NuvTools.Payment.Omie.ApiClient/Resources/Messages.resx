@@ -103,6 +103,9 @@
   <data name="WhenChangingOmieWorkOrder" xml:space="preserve">
     <value>when changing Omie service order</value>
   </data>
+  <data name="OmieRefusedChangeClaimingMissingIdentification" xml:space="preserve">
+    <value>Omie refused the service order change claiming the identification tags were not informed, although they were sent ({0}). This refusal is intermittent on Omie's side — the same request has been accepted before. Try again in a few moments. Original response: {1}</value>
+  </data>
   <data name="WhenConsultingOmieWorkOrder" xml:space="preserve">
     <value>when consulting Omie service order</value>
   </data>

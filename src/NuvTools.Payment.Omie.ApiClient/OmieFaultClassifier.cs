@@ -34,9 +34,28 @@ public static class OmieFaultClassifier
         "nenhum registro"
     ];
 
+    // AlterarOS: "Informe a Tag [nCodOS] ou [cCodIntOS] na alteração!". Observed with BOTH tags filled inside
+    // cabecalho — where the API documents them — on a payload Omie had accepted minutes earlier, unchanged. The
+    // wording blames the caller; the evidence says otherwise, so callers treat it as a transient refusal.
+    private static readonly string[] MissingOrderIdentificationMarkers =
+    [
+        "informe a tag"
+    ];
+
     /// <summary>True when the failure indicates the integration code (cCodIntOS) already exists in Omie.</summary>
     public static bool IsDuplicateIntegrationCode(string? message)
         => ContainsAny(message, DuplicateMarkers);
+
+    /// <summary>
+    /// True when AlterarOS refused the change claiming the OS identification tags were not informed. Intermittent:
+    /// the same body, byte for byte, has been accepted and refused by Omie minutes apart. Retrying later is the
+    /// only remedy — but not immediately, since an identical repeated call is what Omie punishes as redundant
+    /// consumption.
+    /// </summary>
+    public static bool IsMissingOrderIdentification(string? message)
+        => ContainsAny(message, MissingOrderIdentificationMarkers)
+            && (message!.Contains("nCodOS", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("cCodIntOS", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>True when the failure indicates the requested record was not found in Omie.</summary>
     public static bool IsNotFound(string? message)
@@ -49,6 +68,10 @@ public static class OmieFaultClassifier
     /// <summary>Convenience overload over a failed <see cref="IResult"/>.</summary>
     public static bool IsNotFound(IResult result)
         => result is not null && !result.Succeeded && IsNotFound(result.Message);
+
+    /// <summary>Convenience overload over a failed <see cref="IResult"/>.</summary>
+    public static bool IsMissingOrderIdentification(IResult result)
+        => result is not null && !result.Succeeded && IsMissingOrderIdentification(result.Message);
 
     private static bool ContainsAny(string? message, string[] markers)
     {
