@@ -8,6 +8,16 @@ namespace NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 /// </summary>
 public class IncludeOSParam
 {
+    /// <summary>
+    /// OS code at the <b>root</b> of param — where AlterarOS reads it. Omie rejected an AlterarOS carrying the
+    /// identification only inside <c>cabecalho</c> ("Informe a Tag [nCodOS] ou [cCodIntOS] na alteração!"), and
+    /// then rejected <c>cCodIntOS</c> at this level ("Tag [CCODINTOS] não faz parte da estrutura do tipo
+    /// complexo [osCadastro]"): the root takes <b>only</b> the numeric code, so the alteration is targeted by
+    /// <c>nCodOS</c>. Null on IncluirOS (omitted via WhenWritingNull), where the header identifies the OS.
+    /// </summary>
+    [JsonPropertyName("nCodOS")]
+    public long? OsCode { get; set; }
+
     [JsonPropertyName("cabecalho")]
     public required IncludeOSHeader Header { get; set; }
 

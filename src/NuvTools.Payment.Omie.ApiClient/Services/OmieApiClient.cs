@@ -169,12 +169,22 @@ public class OmieApiClient(
             cancellationToken);
 
     public Task<IResult<IncludeOSResponse>> ChangeOSAsync(IncludeOSParam param, CancellationToken cancellationToken = default)
-        => ExecuteOmieOperationAsync<IncludeOSResponse>(
+    {
+        // AlterarOS lê a identificação da OS na raiz do param — o mesmo lugar de TrocarEtapaOS — e ali aceita
+        // somente o código numérico: com a identificação apenas no cabecalho (onde o IncluirOS a lê) o Omie
+        // responde "Informe a Tag [nCodOS] ou [cCodIntOS] na alteração!", e com cCodIntOS na raiz responde
+        // "Tag [CCODINTOS] não faz parte da estrutura do tipo complexo [osCadastro]". Por isso só nCodOS sobe
+        // para a raiz. O cabecalho segue como está: quem chama monta um payload só, e é o cliente que o adapta
+        // para cada operação.
+        param.OsCode ??= param.Header.OsCode;
+
+        return ExecuteOmieOperationAsync<IncludeOSResponse>(
             Fields.ChangeOS,
             new JsonArray(JsonSerializer.SerializeToNode(param, JsonOptions)),
             OrderServiceUrl,
             Messages.WhenChangingOmieWorkOrder,
             cancellationToken);
+    }
 
     public Task<IResult<ConsultOSResponse>> ConsultOSAsync(long? nCodOS = null, string? cCodIntOS = null, CancellationToken cancellationToken = default)
     {
