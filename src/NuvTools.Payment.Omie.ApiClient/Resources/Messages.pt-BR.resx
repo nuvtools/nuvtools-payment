@@ -58,115 +58,58 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="FailedCommunicationX" xml:space="preserve">
-    <value>Communication failure {0}.</value>
-  </data>
-  <data name="WhenConsultingOmieClient" xml:space="preserve">
-    <value>when consulting Omie client</value>
-  </data>
-  <data name="WhenConsultingOmieService" xml:space="preserve">
-    <value>when consulting Omie service</value>
-  </data>
-  <data name="WhenIncludingOmieWorkOrder" xml:space="preserve">
-    <value>when including Omie service order</value>
-  </data>
-  <data name="WhenGeneratingOmieBillet" xml:space="preserve">
-    <value>when generating Omie billet</value>
-  </data>
-  <data name="WhenIncludingOmieReceivable" xml:space="preserve">
-    <value>when including Omie receivable</value>
-  </data>
-  <data name="WhenGettingOmieBillet" xml:space="preserve">
-    <value>when retrieving Omie billet</value>
-  </data>
-  <data name="InvalidResponseFromOmieX" xml:space="preserve">
-    <value>Invalid response from Omie API ({0}).</value>
-  </data>
-  <data name="ProvideTituloIdentifier" xml:space="preserve">
-    <value>Provide nCodTitulo or cCodIntTitulo.</value>
-  </data>
-  <data name="OmieReturnedStatusXWithoutDescription" xml:space="preserve">
-    <value>Omie returned status {0} without description. Check the operation configuration in the Omie panel.</value>
-  </data>
-  <data name="UnknownErrorFromOmie" xml:space="preserve">
-    <value>Unknown error from Omie API.</value>
-  </data>
-  <data name="WhenConsultingOmieContract" xml:space="preserve">
-    <value>when consulting Omie contract</value>
-  </data>
-  <data name="WhenListingOmieServices" xml:space="preserve">
-    <value>when listing Omie services</value>
-  </data>
-  <data name="WhenListingOmieCategories" xml:space="preserve">
-    <value>when listing Omie categories</value>
-  </data>
-  <data name="WhenChangingOmieWorkOrder" xml:space="preserve">
-    <value>when changing Omie service order</value>
-  </data>
-  <data name="OmieRefusedChangeClaimingMissingIdentification" xml:space="preserve">
-    <value>Omie refused the service order change claiming the identification tags were not informed, although they were sent ({0}). This refusal is intermittent on Omie's side — the same request has been accepted before. Try again in a few moments. Original response: {1}</value>
-  </data>
-  <data name="WhenConsultingOmieWorkOrder" xml:space="preserve">
-    <value>when consulting Omie service order</value>
-  </data>
-  <data name="WhenChangingOmieWorkOrderStage" xml:space="preserve">
-    <value>when changing Omie service order stage</value>
-  </data>
-  <data name="WhenListingOmieBillingStages" xml:space="preserve">
-    <value>when listing Omie billing stages</value>
-  </data>
   <data name="OmieIntegrationNotConfigured" xml:space="preserve">
-    <value>Omie integration is not configured (Omie:AppKey, Omie:AppSecret, Omie:BaseUrl and the endpoint of the registration).</value>
+    <value>Integração com o Omie não configurada (Omie:AppKey, Omie:AppSecret, Omie:BaseUrl e o endpoint do cadastro).</value>
   </data>
   <data name="OmieCallFailedXStatusXFaultX" xml:space="preserve">
-    <value>{0} failed in Omie ({1}): {2}</value>
+    <value>Falha em {0} no Omie ({1}): {2}</value>
   </data>
   <data name="OmieCallFailedXReasonX" xml:space="preserve">
-    <value>{0} failed in Omie: {1}</value>
+    <value>Falha em {0} no Omie: {1}</value>
   </data>
   <data name="OmieCallFailedX" xml:space="preserve">
-    <value>{0} failed in Omie.</value>
+    <value>Falha em {0} no Omie.</value>
   </data>
   <data name="OmieReturnedEmptyResponseX" xml:space="preserve">
-    <value>Omie returned an empty response for {0}.</value>
+    <value>O Omie devolveu uma resposta vazia em {0}.</value>
   </data>
   <data name="OmieWaitXSecondsAndRetry" xml:space="preserve">
-    <value>Wait {0} seconds and try again.</value>
+    <value>Aguarde {0} segundos e tente novamente.</value>
   </data>
   <data name="OmieWaitAndRetry" xml:space="preserve">
-    <value>Wait a moment and try again.</value>
+    <value>Aguarde um instante e tente novamente.</value>
   </data>
   <data name="OmieBlockedForExcessiveCalls" xml:space="preserve">
-    <value>Omie temporarily blocked the integration for excessive calls.</value>
+    <value>O Omie bloqueou temporariamente a integração por excesso de chamadas.</value>
   </data>
   <data name="OmieRefusedRedundantCall" xml:space="preserve">
-    <value>Omie refused the call as a repeat (redundant consumption).</value>
+    <value>O Omie recusou a chamada por repetição (consumo redundante).</value>
   </data>
   <data name="OmieClientXNotFound" xml:space="preserve">
-    <value>Document {0} was not found in the Omie client registration.</value>
+    <value>CNPJ {0} não encontrado no cadastro de clientes do Omie.</value>
   </data>
   <data name="OmieClientRegistrationEmpty" xml:space="preserve">
-    <value>The Omie client registration returned no records.</value>
+    <value>O cadastro de clientes do Omie não retornou nenhum registro.</value>
   </data>
   <data name="OmieNoCheckingAccountAvailable" xml:space="preserve">
-    <value>Omie returned no available checking account.</value>
+    <value>O Omie não retornou nenhuma conta corrente disponível.</value>
   </data>
   <data name="OmieCategoryNotConfigured" xml:space="preserve">
-    <value>Omie category is not configured and no search preferences were given.</value>
+    <value>Categoria do Omie não configurada e sem preferências de busca.</value>
   </data>
   <data name="OmieNoCategoryMatchesXAvailableX" xml:space="preserve">
-    <value>No Omie revenue category matches: {0}. Available categories: {1}. Configure one explicitly.</value>
+    <value>Nenhuma categoria de receita do Omie corresponde a: {0}. Categorias disponíveis: {1}. Informe uma categoria na configuração.</value>
   </data>
   <data name="OmieNoRevenueCategoryReturned" xml:space="preserve">
-    <value>The Omie chart of accounts returned no revenue category.</value>
+    <value>O plano de contas do Omie não trouxe nenhuma categoria de receita.</value>
   </data>
   <data name="OmieServiceListFailedX" xml:space="preserve">
-    <value>Failed to list the Omie service catalog: {0}</value>
+    <value>Falha ao listar o catálogo de serviços do Omie: {0}</value>
   </data>
   <data name="OmieServiceDetailFailedXReasonX" xml:space="preserve">
-    <value>Failed to consult the registration of service {0} in Omie: {1}</value>
+    <value>Falha ao consultar o cadastro do serviço {0} no Omie: {1}</value>
   </data>
   <data name="OmieRefusedXForOrderXStatusX" xml:space="preserve">
-    <value>Omie refused {0} for service order {1} (status {2}).</value>
+    <value>O Omie recusou {0} da OS {1} (status {2}).</value>
   </data>
 </root>

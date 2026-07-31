@@ -230,5 +230,167 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
                 return ResourceManager.GetString("WhenListingOmieBillingStages", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie integration is not configured (Omie:AppKey, Omie:AppSecret, Omie:BaseUrl and the endpoint of the registration).
+        /// </summary>
+        public static string OmieIntegrationNotConfigured {
+            get {
+                return ResourceManager.GetString("OmieIntegrationNotConfigured", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} failed in Omie ({1}): {2}.
+        /// </summary>
+        public static string OmieCallFailedXStatusXFaultX {
+            get {
+                return ResourceManager.GetString("OmieCallFailedXStatusXFaultX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} failed in Omie: {1}.
+        /// </summary>
+        public static string OmieCallFailedXReasonX {
+            get {
+                return ResourceManager.GetString("OmieCallFailedXReasonX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} failed in Omie.
+        /// </summary>
+        public static string OmieCallFailedX {
+            get {
+                return ResourceManager.GetString("OmieCallFailedX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie returned an empty response for {0}.
+        /// </summary>
+        public static string OmieReturnedEmptyResponseX {
+            get {
+                return ResourceManager.GetString("OmieReturnedEmptyResponseX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Wait {0} seconds and try again.
+        /// </summary>
+        public static string OmieWaitXSecondsAndRetry {
+            get {
+                return ResourceManager.GetString("OmieWaitXSecondsAndRetry", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Wait a moment and try again.
+        /// </summary>
+        public static string OmieWaitAndRetry {
+            get {
+                return ResourceManager.GetString("OmieWaitAndRetry", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie temporarily blocked the integration for excessive calls.
+        /// </summary>
+        public static string OmieBlockedForExcessiveCalls {
+            get {
+                return ResourceManager.GetString("OmieBlockedForExcessiveCalls", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie refused the call as a repeat (redundant consumption).
+        /// </summary>
+        public static string OmieRefusedRedundantCall {
+            get {
+                return ResourceManager.GetString("OmieRefusedRedundantCall", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Document {0} was not found in the Omie client registration.
+        /// </summary>
+        public static string OmieClientXNotFound {
+            get {
+                return ResourceManager.GetString("OmieClientXNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The Omie client registration returned no records.
+        /// </summary>
+        public static string OmieClientRegistrationEmpty {
+            get {
+                return ResourceManager.GetString("OmieClientRegistrationEmpty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie returned no available checking account.
+        /// </summary>
+        public static string OmieNoCheckingAccountAvailable {
+            get {
+                return ResourceManager.GetString("OmieNoCheckingAccountAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie category is not configured and no search preferences were given.
+        /// </summary>
+        public static string OmieCategoryNotConfigured {
+            get {
+                return ResourceManager.GetString("OmieCategoryNotConfigured", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No Omie revenue category matches: {0}. Available categories: {1}. Configure one explicitly.
+        /// </summary>
+        public static string OmieNoCategoryMatchesXAvailableX {
+            get {
+                return ResourceManager.GetString("OmieNoCategoryMatchesXAvailableX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The Omie chart of accounts returned no revenue category.
+        /// </summary>
+        public static string OmieNoRevenueCategoryReturned {
+            get {
+                return ResourceManager.GetString("OmieNoRevenueCategoryReturned", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to list the Omie service catalog: {0}.
+        /// </summary>
+        public static string OmieServiceListFailedX {
+            get {
+                return ResourceManager.GetString("OmieServiceListFailedX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to consult the registration of service {0} in Omie: {1}.
+        /// </summary>
+        public static string OmieServiceDetailFailedXReasonX {
+            get {
+                return ResourceManager.GetString("OmieServiceDetailFailedXReasonX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Omie refused {0} for service order {1} (status {2}).
+        /// </summary>
+        public static string OmieRefusedXForOrderXStatusX {
+            get {
+                return ResourceManager.GetString("OmieRefusedXForOrderXStatusX", resourceCulture);
+            }
+        }
     }
 }

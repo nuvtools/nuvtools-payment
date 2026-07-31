@@ -7,7 +7,7 @@
 	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
 	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 	  <Description>Typed HTTP client for the Omie ERP API. Supports client lookup, service registration query, service order (OS) creation, accounts receivable entries, and bank slip (boleto) generation. Returns NuvTools.Common ResultWrapper results.</Description>
-	  <Version>10.0.10</Version>
+	  <Version>10.1.0</Version>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 	  <PackageIcon>icon.png</PackageIcon>
@@ -45,8 +45,10 @@
 
   <ItemGroup>
     <PackageReference Include="NuvTools.Common" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.9" />
   </ItemGroup>

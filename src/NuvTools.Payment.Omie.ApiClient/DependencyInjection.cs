@@ -26,6 +26,18 @@ public static class DependencyInjection
 
         services.AddSingleton<IOmieApiClient, Services.OmieApiClient>();
 
+        // Registrations the typed client does not cover, or covers without the fields a caller needs: clients
+        // (only consulted by the very code one wants to discover), categories (the listing lacks whether the
+        // account takes revenue and whether it is active), checking accounts, and single-order invoicing.
+        // They share the same "Omie" configuration section and go through the raw call client.
+        services.AddMemoryCache();
+        services.AddHttpClient<Services.OmieDirectApiClient>();
+        services.AddScoped<Services.OmieClientDirectoryProvider>();
+        services.AddScoped<Services.OmieCategoryProvider>();
+        services.AddScoped<Services.OmieCheckingAccountProvider>();
+        services.AddScoped<Services.OmieServiceCatalogProvider>();
+        services.AddScoped<Services.OmieServiceOrderBillingProvider>();
+
         return services;
     }
 }

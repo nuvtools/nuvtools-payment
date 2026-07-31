@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using NuvTools.Common.ResultWrapper;
+using NuvTools.Payment.Omie.ApiClient.Resources;
 
 namespace NuvTools.Payment.Omie.ApiClient;
 
@@ -11,8 +13,23 @@ namespace NuvTools.Payment.Omie.ApiClient;
 /// VERIFY (Omie test app): confirm the exact faultstring wording for the duplicate-integration-code and
 /// not-found cases against the current Omie responses and adjust the markers below if needed.
 /// </summary>
-public static class OmieFaultClassifier
+public static partial class OmieFaultClassifier
 {
+    // Omie consumption control, not a business error: the same call with the same parameters arriving again within
+    // roughly a minute (REDUNDANT), or the app key blocked for excessive calls (MISUSE_API_PROCESS).
+    private static readonly string[] RedundantConsumptionMarkers =
+    [
+        "REDUNDANT",
+        "consumo redundante",
+        "redundant consumption"
+    ];
+
+    private static readonly string[] BlockedConsumptionMarkers =
+    [
+        "MISUSE_API_PROCESS",
+        "consumo indevido"
+    ];
+
     // Omie duplicate cCodIntOS, e.g. "O código de integração [xxx] já foi cadastrado anteriormente."
     private static readonly string[] DuplicateMarkers =
     [
@@ -23,13 +40,16 @@ public static class OmieFaultClassifier
         "já cadastrado"
     ];
 
-    // Omie not-found, e.g. "OS não encontrada" / "não localizada" / "not found".
+    // Omie not-found, e.g. "OS não encontrada" / "não localizada" / "não cadastrada" / "inexistente" / "not found".
     private static readonly string[] NotFoundMarkers =
     [
         "nao encontrad",
         "não encontrad",
         "nao localizad",
         "não localizad",
+        "nao cadastrad",
+        "não cadastrad",
+        "inexistente",
         "not found",
         "nenhum registro"
     ];
@@ -73,6 +93,36 @@ public static class OmieFaultClassifier
     public static bool IsMissingOrderIdentification(IResult result)
         => result is not null && !result.Succeeded && IsMissingOrderIdentification(result.Message);
 
+    /// <summary>
+    /// True when Omie refused the call to control consumption rather than because of the request itself — either a
+    /// redundant call (the same parameters again within about a minute) or an app key temporarily blocked for
+    /// excessive calls. Neither is fixed by changing the request: only by waiting.
+    /// </summary>
+    public static bool IsThrottled(string? message)
+        => ContainsAny(message, RedundantConsumptionMarkers) || ContainsAny(message, BlockedConsumptionMarkers);
+
+    /// <summary>Convenience overload over a failed <see cref="IResult"/>.</summary>
+    public static bool IsThrottled(IResult result)
+        => result is not null && !result.Succeeded && IsThrottled(result.Message);
+
+    /// <summary>
+    /// A message for the end user about a throttled call, preserving the wait Omie reported when there is one.
+    /// Telling someone to wait is a different instruction from telling them to fix something, which is why the
+    /// refusal is worth distinguishing.
+    /// </summary>
+    public static string DescribeThrottle(string? message)
+    {
+        var seconds = SecondsPattern().Match(message ?? string.Empty);
+
+        var wait = seconds.Success
+            ? string.Format(Messages.OmieWaitXSecondsAndRetry, seconds.Groups[1].Value)
+            : Messages.OmieWaitAndRetry;
+
+        return ContainsAny(message, BlockedConsumptionMarkers)
+            ? $"{Messages.OmieBlockedForExcessiveCalls} {wait}"
+            : $"{Messages.OmieRefusedRedundantCall} {wait}";
+    }
+
     private static bool ContainsAny(string? message, string[] markers)
     {
         if (string.IsNullOrWhiteSpace(message)) return false;
@@ -81,4 +131,8 @@ public static class OmieFaultClassifier
                 return true;
         return false;
     }
+
+    /// <summary>"Tente novamente em 1322 segundos" / "wait 59 seconds" — the number Omie returns.</summary>
+    [GeneratedRegex(@"(\d+)\s*(?:seconds?|segundos?)", RegexOptions.IgnoreCase)]
+    private static partial Regex SecondsPattern();
 }

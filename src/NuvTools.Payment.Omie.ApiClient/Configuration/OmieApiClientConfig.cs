@@ -55,6 +55,22 @@ public class OmieApiClientConfig
     /// <summary>geral/categorias/ — ListarCategorias (resolve a service's cCodCateg to its category name).</summary>
     public string EndpointCategory { get; set; } = "geral/categorias/";
 
+    /// <summary>geral/contacorrente/ — ListarContasCorrentes (checking accounts a receivable can land on).</summary>
+    public string EndpointCheckingAccount { get; set; } = "geral/contacorrente/";
+
+    /// <summary>
+    /// servicos/osp/ — ValidarOS and FaturarOS, which invoice a single service order. Not to be confused with
+    /// servicos/oslote/, which invoices every OS of a Kanban stage at once, nor with servicos/osetapas/, which
+    /// only lists stages.
+    /// </summary>
+    public string EndpointOrderServiceBilling { get; set; } = "servicos/osp/";
+
+    /// <summary>Page size when listing clients — ListarClientes accepts up to 500. Default 500.</summary>
+    public int ClientsPerPage { get; set; } = 500;
+
+    /// <summary>Page size when listing categories. Default 500.</summary>
+    public int CategoriesPerPage { get; set; } = 500;
+
     // Minimal resilience knobs (this client intentionally does NOT use Polly/HttpClientFactory — see the
     // comment on OmieApiClient._staticClient). Retries cover only network failures and HTTP 5xx; the
     // deterministic cCodIntOS idempotency anchor makes retrying OS writes safe. Set MaxRetryAttempts = 0 to disable.
