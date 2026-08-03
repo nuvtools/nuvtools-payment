@@ -151,6 +151,16 @@ public class OmieApiClient(
             Messages.WhenConsultingOmieContract,
             cancellationToken);
 
+    public Task<IResult<ListContractsResponse>> ListContractsAsync(int page = 1, int recordsPerPage = 100, CancellationToken cancellationToken = default)
+        => ExecuteOmieOperationAsync<ListContractsResponse>(
+            Fields.ListContracts,
+            // servicos/contrato ListarContratos pages with pagina/registros_por_pagina, like the category listing —
+            // and not with nPagina/nRegPorPagina, which is the service catalog's spelling.
+            new JsonArray(new JsonObject { ["pagina"] = page, ["registros_por_pagina"] = recordsPerPage }),
+            ContractUrl,
+            Messages.WhenListingOmieContracts,
+            cancellationToken);
+
     public Task<IResult<ListServiceRegistrationResponse>> ListServiceRegistrationAsync(int page = 1, int recordsPerPage = 50, CancellationToken cancellationToken = default)
         => ExecuteOmieOperationAsync<ListServiceRegistrationResponse>(
             Fields.ListServiceRegistration,

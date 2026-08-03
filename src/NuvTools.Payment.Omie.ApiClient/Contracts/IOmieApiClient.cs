@@ -48,6 +48,13 @@ public interface IOmieApiClient
     Task<IResult<ConsultContractResponse>> ConsultContractAsync(long omieContractCode, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lists Service Contracts (ListarContratos) so a contract can be resolved by the number the user knows
+    /// (cNumCtr) — Omie offers no search by contract number. List once and index in memory: consulting contract by
+    /// contract is what trips Omie's "Consumo redundante" gate.
+    /// </summary>
+    Task<IResult<ListContractsResponse>> ListContractsAsync(int page = 1, int recordsPerPage = 100, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lists registered services (ListarCadastroServico) to resolve/validate a nCodServico.
     /// </summary>
     Task<IResult<ListServiceRegistrationResponse>> ListServiceRegistrationAsync(int page = 1, int recordsPerPage = 50, CancellationToken cancellationToken = default);

@@ -94,6 +94,9 @@
   <data name="WhenConsultingOmieContract" xml:space="preserve">
     <value>when consulting Omie contract</value>
   </data>
+  <data name="WhenListingOmieContracts" xml:space="preserve">
+    <value>when listing Omie contracts</value>
+  </data>
   <data name="WhenListingOmieServices" xml:space="preserve">
     <value>when listing Omie services</value>
   </data>
@@ -159,6 +162,9 @@
   </data>
   <data name="OmieNoRevenueCategoryReturned" xml:space="preserve">
     <value>The Omie chart of accounts returned no revenue category.</value>
+  </data>
+  <data name="OmieContractListFailedX" xml:space="preserve">
+    <value>Failed to list the Omie contracts: {0}</value>
   </data>
   <data name="OmieServiceListFailedX" xml:space="preserve">
     <value>Failed to list the Omie service catalog: {0}</value>

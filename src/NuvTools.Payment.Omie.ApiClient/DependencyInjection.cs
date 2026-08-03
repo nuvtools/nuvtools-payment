@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<Services.OmieCategoryProvider>();
         services.AddScoped<Services.OmieCheckingAccountProvider>();
         services.AddScoped<Services.OmieServiceCatalogProvider>();
+        services.AddScoped<Services.OmieContractProvider>();
         services.AddScoped<Services.OmieServiceOrderBillingProvider>();
 
         return services;

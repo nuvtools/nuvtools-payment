@@ -124,6 +124,15 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to ListarContratos.
+        /// </summary>
+        public static string ListContracts {
+            get {
+                return ResourceManager.GetString("ListContracts", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to ListarCadastroServico.
         /// </summary>
         public static string ListServiceRegistration {

@@ -367,6 +367,24 @@ namespace NuvTools.Payment.Omie.ApiClient.Resources {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Failed to list the Omie contracts: {0}.
+        /// </summary>
+        public static string OmieContractListFailedX {
+            get {
+                return ResourceManager.GetString("OmieContractListFailedX", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to when listing Omie contracts.
+        /// </summary>
+        public static string WhenListingOmieContracts {
+            get {
+                return ResourceManager.GetString("WhenListingOmieContracts", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Failed to list the Omie service catalog: {0}.
         /// </summary>
         public static string OmieServiceListFailedX {

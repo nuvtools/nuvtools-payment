@@ -103,6 +103,9 @@
   <data name="OmieNoRevenueCategoryReturned" xml:space="preserve">
     <value>O plano de contas do Omie não trouxe nenhuma categoria de receita.</value>
   </data>
+  <data name="OmieContractListFailedX" xml:space="preserve">
+    <value>Falha ao listar os contratos do Omie: {0}</value>
+  </data>
   <data name="OmieServiceListFailedX" xml:space="preserve">
     <value>Falha ao listar o catálogo de serviços do Omie: {0}</value>
   </data>
