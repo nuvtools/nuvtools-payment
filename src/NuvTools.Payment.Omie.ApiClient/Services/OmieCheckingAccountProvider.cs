@@ -20,10 +20,17 @@ public class OmieCheckingAccountProvider(OmieDirectApiClient omie, IMemoryCache 
     private const int MaxPages = 20;
     private const int AccountsPerPage = 50;
 
-    /// <summary>Usable checking accounts of the account's registration.</summary>
-    public async Task<IResult<IReadOnlyList<OmieCheckingAccount>>> GetAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Usable checking accounts of the account's registration. With <paramref name="forceRefresh"/> the cache is
+    /// ignored and rewritten with whatever Omie returns — what a "reload from the ERP" action needs, since the
+    /// cached list would otherwise be served for the next 30 minutes and the button would look inert.
+    /// </summary>
+    public async Task<IResult<IReadOnlyList<OmieCheckingAccount>>> GetAsync(
+        bool forceRefresh, CancellationToken cancellationToken)
     {
-        if (cache.TryGetValue<IReadOnlyList<OmieCheckingAccount>>(CacheKey, out var cached) && cached is not null)
+        if (!forceRefresh
+            && cache.TryGetValue<IReadOnlyList<OmieCheckingAccount>>(CacheKey, out var cached)
+            && cached is not null)
             return Result<IReadOnlyList<OmieCheckingAccount>>.Success(cached);
 
         var accounts = new List<OmieCheckingAccount>();

@@ -46,7 +46,7 @@ public class OmieCategoryProvider(
         if (preferences.Count == 0)
             return Result<string>.Fail(Messages.OmieCategoryNotConfigured);
 
-        var categories = await GetRevenueCategoriesAsync(cancellationToken);
+        var categories = await GetRevenueCategoriesAsync(forceRefresh: false, cancellationToken);
         if (!categories.Succeeded || categories.Data is null)
             return Result<string>.Fail(categories.Messages);
 
@@ -83,10 +83,18 @@ public class OmieCategoryProvider(
         return null;
     }
 
-    /// <summary>Usable revenue categories of the chart of accounts — the list an application offers for selection.</summary>
-    public async Task<IResult<IReadOnlyList<OmieCategory>>> GetRevenueCategoriesAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Usable revenue categories of the chart of accounts — the list an application offers for selection.
+    /// With <paramref name="forceRefresh"/> the cache is ignored and rewritten with whatever Omie returns, which is
+    /// what a "reload from the ERP" action needs: without it the button would serve the cached list for the next
+    /// 30 minutes and look like it did nothing.
+    /// </summary>
+    public async Task<IResult<IReadOnlyList<OmieCategory>>> GetRevenueCategoriesAsync(
+        bool forceRefresh, CancellationToken cancellationToken)
     {
-        if (cache.TryGetValue<IReadOnlyList<OmieCategory>>(CacheKey, out var cached) && cached is not null)
+        if (!forceRefresh
+            && cache.TryGetValue<IReadOnlyList<OmieCategory>>(CacheKey, out var cached)
+            && cached is not null)
             return Result<IReadOnlyList<OmieCategory>>.Success(cached);
 
         var categories = new List<OmieCategory>();
