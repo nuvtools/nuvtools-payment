@@ -62,7 +62,8 @@ public class OmieContractProvider(IOmieApiClient omie, IMemoryCache cache)
                     header.ClientCode,
                     ParseDate(header.ValidFrom),
                     ParseDate(header.ValidTo),
-                    header.MonthlyValue);
+                    header.MonthlyValue,
+                    BuildUnitValues(contract.Items));
 
                 // Indexed by number and also by the internal code as text: a caller that stored nCodCtr instead of
                 // cNumCtr still finds its contract, and no caller needs to know which of the two it kept.
@@ -98,6 +99,31 @@ public class OmieContractProvider(IOmieApiClient omie, IMemoryCache cache)
         return Result<OmieContractInfo?>.Success(
             data: contracts.Data.TryGetValue(NormalizeNumber(contractNumber), out var contract) ? contract : null);
     }
+
+    /// <summary>
+    /// The negotiated unit price of each service in the contract, keyed by <c>nCodServico</c>. A line without a
+    /// price is skipped rather than stored as zero: "not negotiated" and "negotiated at nothing" are different
+    /// answers, and zero would quietly become a free service on the caller's screen.
+    /// </summary>
+    private static IReadOnlyDictionary<long, decimal> BuildUnitValues(ListContractsServiceItem[]? items)
+    {
+        if (items is null || items.Length == 0) return EmptyUnitValues;
+
+        var values = new Dictionary<long, decimal>();
+
+        foreach (var item in items)
+        {
+            var header = item.Header;
+            if (header is null || header.ServiceCode == 0 || header.UnitValue is not { } value) continue;
+
+            values[header.ServiceCode] = value;
+        }
+
+        return values.Count == 0 ? EmptyUnitValues : values;
+    }
+
+    private static readonly IReadOnlyDictionary<long, decimal> EmptyUnitValues =
+        new Dictionary<long, decimal>();
 
     /// <summary>
     /// The key both sides of the match are reduced to: letters and digits only, upper-cased. Everything else —

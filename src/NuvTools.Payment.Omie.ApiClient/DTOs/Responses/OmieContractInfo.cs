@@ -11,10 +11,24 @@ namespace NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 /// <param name="ValidFrom">Start of the validity period; null when Omie sent none.</param>
 /// <param name="ValidTo">End of the validity period; null on contracts with no end date.</param>
 /// <param name="MonthlyValue">Negotiated monthly value; null when Omie sent none.</param>
+/// <param name="UnitValueByServiceCode">
+/// Negotiated unit price of each service in the contract, keyed by Omie's service identifier (<c>nCodServico</c>) —
+/// the same key the service catalog uses, so a caller holding a service code can ask what this client pays for it.
+/// Empty when the contract carries no items.
+/// </param>
 public sealed record OmieContractInfo(
     long ContractCode,
     string? ContractNumber,
     long ClientCode,
     DateOnly? ValidFrom,
     DateOnly? ValidTo,
-    decimal? MonthlyValue);
+    decimal? MonthlyValue,
+    IReadOnlyDictionary<long, decimal> UnitValueByServiceCode)
+{
+    /// <summary>
+    /// What this contract charges for a service, or null when the service is not in it — which is the normal case:
+    /// a contract covers the services that were negotiated, and the rest stay on the standard price list.
+    /// </summary>
+    public decimal? UnitValueOf(long serviceCode)
+        => UnitValueByServiceCode.TryGetValue(serviceCode, out var value) ? value : null;
+}

@@ -36,11 +36,38 @@ public class ListContractsResponse : IOmieBusinessStatus
     public string? StatusDescription { get; set; }
 }
 
-/// <summary>One contract of the listing. Only the header is mapped — it carries everything a price registry needs.</summary>
+/// <summary>One contract of the listing: the header and the negotiated price of each service in it.</summary>
 public class ListContractsItem
 {
     [JsonPropertyName("cabecalho")]
     public ListContractsHeader? Header { get; set; }
+
+    /// <summary>
+    /// The services covered by the contract, each with its negotiated unit price. This is where a contract stops
+    /// being an envelope and becomes a price registry: the header says for whom and until when, the items say how
+    /// much, service by service.
+    /// </summary>
+    [JsonPropertyName("itensContrato")]
+    public ListContractsServiceItem[]? Items { get; set; }
+}
+
+/// <summary>One service line of a contract in the listing.</summary>
+public class ListContractsServiceItem
+{
+    [JsonPropertyName("itemCabecalho")]
+    public ListContractsServiceItemHeader? Header { get; set; }
+}
+
+/// <summary>The <c>itemCabecalho</c> of a contract line: which service, and at what price.</summary>
+public class ListContractsServiceItemHeader
+{
+    /// <summary>Omie's internal service identifier (nCodServico), the same one the service catalog is keyed by.</summary>
+    [JsonPropertyName("codServico")]
+    public long ServiceCode { get; set; }
+
+    /// <summary>Negotiated unit price of the service in this contract.</summary>
+    [JsonPropertyName("valorUnitario")]
+    public decimal? UnitValue { get; set; }
 }
 
 /// <summary>
