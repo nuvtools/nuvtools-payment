@@ -27,10 +27,22 @@ internal static class StripeEventReader
     public const string PaymentIntentSucceeded = "payment_intent.succeeded";
     public const string PaymentIntentFailed = "payment_intent.payment_failed";
 
+    /// <summary>
+    /// Raised on the charge, not the intent, and that is why the reader reaches for
+    /// <c>payment_intent</c> below: a caller stores the intent, so the charge's own id would name
+    /// nothing it holds.
+    /// </summary>
+    public const string ChargeRefunded = "charge.refunded";
+
     public static PaymentEventDTO Read(Event stripeEvent, string payload)
     {
         var type = Type(stripeEvent.Type);
-        var objectId = (stripeEvent.Data?.Object as IHasId)?.Id ?? Value(payload, "id");
+
+        // A refund arrives on the charge, and the caller stored the payment intent — so for that one
+        // event the object a caller can match on is the intent the charge belongs to, not the charge.
+        var objectId = type == PaymentEventType.PaymentRefunded
+            ? Value(payload, "payment_intent")
+            : (stripeEvent.Data?.Object as IHasId)?.Id ?? Value(payload, "id");
 
         return new PaymentEventDTO(
             stripeEvent.Id,
@@ -53,6 +65,7 @@ internal static class StripeEventReader
         SetupIntentSucceeded => PaymentEventType.PaymentMethodSaved,
         PaymentIntentSucceeded => PaymentEventType.PaymentSucceeded,
         PaymentIntentFailed => PaymentEventType.PaymentFailed,
+        ChargeRefunded => PaymentEventType.PaymentRefunded,
         _ => PaymentEventType.Unknown
     };
 

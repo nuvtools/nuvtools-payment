@@ -7,7 +7,7 @@
 		<Copyright>Copyright © 2026 Nuv Tools</Copyright>
 		<PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 		<Description>Provider-neutral payment abstractions: contracts for customers and saved payment methods, payee accounts and their onboarding, charges and transfers, and webhook verification, with minor-unit arithmetic and the shared resilient HttpClient registration the NuvTools.Payment provider clients build on. Reference this from an application layer and let a provider package, such as NuvTools.Payment.Stripe.ApiClient, be registered in the composition root.</Description>
-		<Version>10.0.0</Version>
+		<Version>10.0.1</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 		<PackageIcon>icon.png</PackageIcon>

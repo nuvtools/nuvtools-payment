@@ -7,7 +7,7 @@
 	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
 	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 	  <Description>Typed client for Stripe, covering customers and saved payment methods, Connect Express onboarding, separate charges and transfers, and webhook signature verification. Wraps the official Stripe.net SDK and returns NuvTools.Common ResultWrapper results.</Description>
-	  <Version>10.0.0</Version>
+	  <Version>10.0.1</Version>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 	  <PackageIcon>icon.png</PackageIcon>

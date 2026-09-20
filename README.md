@@ -6,15 +6,15 @@ Payment abstraction library and API clients for Brazilian financial services. Pa
 
 | Project | Target | Description |
 |---------|--------|-------------|
-| **NuvTools.Payment** | net8.0, net9.0, net10.0 | Core payment abstractions: the card, payee, charge and webhook contracts a card provider implements, their DTOs, and the shared HttpClient infrastructure. |
+| **NuvTools.Payment** | net8.0, net9.0, net10.0 | Core payment abstractions: the card, payee, charge, refund and webhook contracts a card provider implements, their DTOs, and the shared HttpClient infrastructure. |
 | **NuvTools.Payment.BancoDoBrasil.ApiClient** | net10.0 | API client for Banco do Brasil bank slip payment services. |
 | **NuvTools.Payment.Sicoob.ApiClient** | net10.0 | API client for Sicoob bank slip services. |
 | **NuvTools.Payment.Omie.ApiClient** | net10.0 | API client for Omie ERP: service orders, accounts receivable, and bank slip (boleto) generation. |
-| **NuvTools.Payment.Stripe.ApiClient** | net10.0 | Stripe's implementation of the `NuvTools.Payment` contracts: customers and saved payment methods, Connect Express onboarding, separate charges and transfers, and webhook signature verification. |
+| **NuvTools.Payment.Stripe.ApiClient** | net10.0 | Stripe's implementation of the `NuvTools.Payment` contracts: customers and saved payment methods, Connect Express onboarding, separate charges and transfers, refunds, and webhook signature verification. |
 
 ## NuvTools.Payment — the card-provider contracts
 
-A marketplace that charges customers and pays several payees out of the same money needs four
+A marketplace that charges customers and pays several payees out of the same money needs five
 capabilities, and they are declared here so that the application layer never references a provider:
 
 | Contract | What it is for |
@@ -22,12 +22,18 @@ capabilities, and they are declared here so that the application layer never ref
 | `IPaymentCustomerClient` | Who is charged, and the payment method they saved — including a provider-hosted page, so no card and no provider script reach the caller's own origin |
 | `IPayeeAccountClient` | An account the platform can pay, and the hosted onboarding that makes it payable |
 | `IPaymentChargeClient` | Charging a customer, and transferring to a payee — two calls, never one destination charge |
+| `IPaymentRefundClient` | Giving money back, in whole or in part. Its own contract because refunding is not the inverse of charging: it names a payment rather than a customer, and a caller that may charge is not automatically one that may refund |
 | `IPaymentWebhookVerifier` | The signature check, and the payload read into the fields a caller acts on |
 
 Amounts are always in the currency's **minor units**; `PaymentMoney` converts, rounding once.
 `PaymentStatusType` and `PaymentEventType` are the provider-neutral vocabularies a client maps its
-own onto — four payment outcomes and four kinds of event, because those are the ones that change what
+own onto — four payment outcomes and five kinds of event, because those are the ones that change what
 the caller does next.
+
+**Refunding does not claw back a payee.** The money already transferred is the caller's to reconcile,
+by netting it off what that payee is owed next. Providers do offer a transfer reversal, and using it
+would take money out of an account the payee may have already spent from — so who absorbs a refund
+stays a decision the caller makes in its own records.
 
 **The provider-shaped reading belongs in the provider's package.** `IPaymentWebhookVerifier` answers
 a `PaymentEventDTO` whose `CustomerId`, `PaymentMethodId` and `FailureReason` are already extracted:
@@ -47,6 +53,7 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
 - Connect **Express** onboarding: account, hosted account link, and account status
 - **Separate charges and transfers** - one charge can pay several connected accounts, which a
   destination charge cannot express
+- Full and partial **refunds**, deliberately without `ReverseTransfer`
 - Caller-supplied idempotency keys on every money-moving call
 - Webhook signature verification, with a separate secret for the Connect endpoint
 
@@ -73,9 +80,9 @@ incoming webhook trustworthy.
 services.AddStripeApiClient(configuration);
 ```
 
-Injects Stripe behind `IPaymentCustomerClient`, `IPayeeAccountClient`, `IPaymentChargeClient` and
-`IPaymentWebhookVerifier` — so this call, in the composition root, is the only place the application
-names Stripe. Each method returns `IResult<T>`, so a declined card is a result to read rather than an
+Injects Stripe behind `IPaymentCustomerClient`, `IPayeeAccountClient`, `IPaymentChargeClient`,
+`IPaymentRefundClient` and `IPaymentWebhookVerifier` — so this call, in the composition root, is the
+only place the application names Stripe. Each method returns `IResult<T>`, so a declined card is a result to read rather than an
 exception to catch.
 
 ## NuvTools.Payment.BancoDoBrasil.ApiClient

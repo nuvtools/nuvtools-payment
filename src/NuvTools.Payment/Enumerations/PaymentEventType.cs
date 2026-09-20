@@ -24,5 +24,16 @@ public enum PaymentEventType
     PaymentSucceeded = 3,
 
     /// <summary>A payment was refused.</summary>
-    PaymentFailed = 4
+    PaymentFailed = 4,
+
+    /// <summary>
+    /// A payment was refunded, in whole or in part.
+    /// </summary>
+    /// <remarks>
+    /// Sent for a refund the caller asked for <i>and</i> for one raised at the provider — a dispute
+    /// resolved in the customer's favour, or somebody acting in the provider's dashboard. That is
+    /// why it is worth acting on rather than inferring from the caller's own refund call: the
+    /// caller's records are otherwise the last to know.
+    /// </remarks>
+    PaymentRefunded = 5
 }
