@@ -6,7 +6,7 @@
 		<Authors>Nuv Tools</Authors>
 		<Copyright>Copyright © 2026 Nuv Tools</Copyright>
 		<PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
-		<Description>Payment abstraction library to support credit card, bank payment slip and other operations.</Description>
+		<Description>Provider-neutral payment abstractions: contracts for customers and saved payment methods, payee accounts and their onboarding, charges and transfers, and webhook verification, with minor-unit arithmetic and the shared resilient HttpClient registration the NuvTools.Payment provider clients build on. Reference this from an application layer and let a provider package, such as NuvTools.Payment.Stripe.ApiClient, be registered in the composition root.</Description>
 		<Version>10.0.0</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
@@ -18,7 +18,7 @@
 		<RepositoryType>git</RepositoryType>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>Payment Payment-Gateway Bank-Payment-Slip</PackageTags>
+		<PackageTags>Payment Payment-Abstractions Payment-Gateway Credit-Card Marketplace Payouts Webhooks Bank-Payment-Slip</PackageTags>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
@@ -41,9 +41,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NuvTools.Common" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
+		<PackageReference Include="NuvTools.Common" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
 	</ItemGroup>
 
 </Project>

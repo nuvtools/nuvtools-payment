@@ -6,6 +6,7 @@
     <Project Path="src\NuvTools.Payment.BancoDoBrasil.ApiClient\NuvTools.Payment.BancoDoBrasil.ApiClient.csproj" />
     <Project Path="src\NuvTools.Payment.Omie.ApiClient\NuvTools.Payment.Omie.ApiClient.csproj" />
     <Project Path="src\NuvTools.Payment.Sicoob.ApiClient\NuvTools.Payment.Sicoob.ApiClient.csproj" />
+    <Project Path="src\NuvTools.Payment.Stripe.ApiClient\NuvTools.Payment.Stripe.ApiClient.csproj" />
     <Project Path="src\NuvTools.Payment\NuvTools.Payment.csproj" />
   </Folder>
   <Folder Name="/tests/">
