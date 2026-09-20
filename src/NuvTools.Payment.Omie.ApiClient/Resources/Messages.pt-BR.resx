@@ -58,46 +58,61 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ConsultClient" xml:space="preserve">
-    <value>ConsultarCliente</value>
+  <data name="OmieIntegrationNotConfigured" xml:space="preserve">
+    <value>Integração com o Omie não configurada (Omie:AppKey, Omie:AppSecret, Omie:BaseUrl e o endpoint do cadastro).</value>
   </data>
-  <data name="ConsultServiceRegistration" xml:space="preserve">
-    <value>ConsultarCadastroServico</value>
+  <data name="OmieCallFailedXStatusXFaultX" xml:space="preserve">
+    <value>Falha em {0} no Omie ({1}): {2}</value>
   </data>
-  <data name="IncludeOS" xml:space="preserve">
-    <value>IncluirOS</value>
+  <data name="OmieCallFailedXReasonX" xml:space="preserve">
+    <value>Falha em {0} no Omie: {1}</value>
   </data>
-  <data name="GenerateBillet" xml:space="preserve">
-    <value>GerarBoleto</value>
+  <data name="OmieCallFailedX" xml:space="preserve">
+    <value>Falha em {0} no Omie.</value>
   </data>
-  <data name="IncludeReceivable" xml:space="preserve">
-    <value>IncluirContaReceber</value>
+  <data name="OmieReturnedEmptyResponseX" xml:space="preserve">
+    <value>O Omie devolveu uma resposta vazia em {0}.</value>
   </data>
-  <data name="GetBillet" xml:space="preserve">
-    <value>ObterBoleto</value>
+  <data name="OmieWaitXSecondsAndRetry" xml:space="preserve">
+    <value>Aguarde {0} segundos e tente novamente.</value>
   </data>
-  <data name="ConsultContract" xml:space="preserve">
-    <value>ConsultarContrato</value>
+  <data name="OmieWaitAndRetry" xml:space="preserve">
+    <value>Aguarde um instante e tente novamente.</value>
   </data>
-  <data name="ListContracts" xml:space="preserve">
-    <value>ListarContratos</value>
+  <data name="OmieBlockedForExcessiveCalls" xml:space="preserve">
+    <value>O Omie bloqueou temporariamente a integração por excesso de chamadas.</value>
   </data>
-  <data name="ListServiceRegistration" xml:space="preserve">
-    <value>ListarCadastroServico</value>
+  <data name="OmieRefusedRedundantCall" xml:space="preserve">
+    <value>O Omie recusou a chamada por repetição (consumo redundante).</value>
   </data>
-  <data name="ListCategoryRegistration" xml:space="preserve">
-    <value>ListarCategorias</value>
+  <data name="OmieClientXNotFound" xml:space="preserve">
+    <value>CNPJ {0} não encontrado no cadastro de clientes do Omie.</value>
   </data>
-  <data name="ChangeOS" xml:space="preserve">
-    <value>AlterarOS</value>
+  <data name="OmieClientRegistrationEmpty" xml:space="preserve">
+    <value>O cadastro de clientes do Omie não retornou nenhum registro.</value>
   </data>
-  <data name="ConsultOS" xml:space="preserve">
-    <value>ConsultarOS</value>
+  <data name="OmieNoCheckingAccountAvailable" xml:space="preserve">
+    <value>O Omie não retornou nenhuma conta corrente disponível.</value>
   </data>
-  <data name="ChangeOSStage" xml:space="preserve">
-    <value>TrocarEtapaOS</value>
+  <data name="OmieCategoryNotConfigured" xml:space="preserve">
+    <value>Categoria do Omie não configurada e sem preferências de busca.</value>
   </data>
-  <data name="ListBillingStages" xml:space="preserve">
-    <value>ListarEtapasFaturamento</value>
+  <data name="OmieNoCategoryMatchesXAvailableX" xml:space="preserve">
+    <value>Nenhuma categoria de receita do Omie corresponde a: {0}. Categorias disponíveis: {1}. Informe uma categoria na configuração.</value>
+  </data>
+  <data name="OmieNoRevenueCategoryReturned" xml:space="preserve">
+    <value>O plano de contas do Omie não trouxe nenhuma categoria de receita.</value>
+  </data>
+  <data name="OmieContractListFailedX" xml:space="preserve">
+    <value>Falha ao listar os contratos do Omie: {0}</value>
+  </data>
+  <data name="OmieServiceListFailedX" xml:space="preserve">
+    <value>Falha ao listar o catálogo de serviços do Omie: {0}</value>
+  </data>
+  <data name="OmieServiceDetailFailedXReasonX" xml:space="preserve">
+    <value>Falha ao consultar o cadastro do serviço {0} no Omie: {1}</value>
+  </data>
+  <data name="OmieRefusedXForOrderXStatusX" xml:space="preserve">
+    <value>O Omie recusou {0} da OS {1} (status {2}).</value>
   </data>
 </root>
