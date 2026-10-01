@@ -7,7 +7,7 @@
 	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
 	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 	  <Description>Typed HTTP client for the Banco do Brasil Payments API. Supports OAuth2 token generation (client_credentials), batch bank slip (boleto) payment creation, and payment query. Returns NuvTools.Common ResultWrapper results.</Description>
-	  <Version>10.0.8</Version>
+	  <Version>10.0.14</Version>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 	  <PackageIcon>icon.png</PackageIcon>
@@ -40,8 +40,11 @@
     </None>
   </ItemGroup>
 
+  <!-- Autossuficiente (como o cliente Omie): sem ProjectReference ao core NuvTools.Payment, para o DLL ser
+       consumido isolado em regis-api/Lib. Depende só de pacotes que o regis já resolve em runtime. -->
   <ItemGroup>
-    <ProjectReference Include="..\NuvTools.Payment\NuvTools.Payment.csproj" />
+    <PackageReference Include="NuvTools.Common" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
   </ItemGroup>
 
 </Project>

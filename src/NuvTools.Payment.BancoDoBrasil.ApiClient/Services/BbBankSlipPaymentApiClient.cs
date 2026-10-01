@@ -12,7 +12,9 @@ using NuvTools.Payment.BancoDoBrasil.ApiClient.DTOs.Responses;
 namespace NuvTools.Payment.BancoDoBrasil.ApiClient.Services;
 
 /// <summary>
-/// Banco do Brasil bank slip batch payment API implementation.
+/// Implementação da API "Pagamentos em Lote" (guias com código de barras) do Banco do Brasil. A app-key vai
+/// como parâmetro de query (<c>gw-dev-app-key</c>) e o Bearer é anexado pelo <see cref="OAuth.BbAuthHandler"/>.
+/// A URL base (<c>BaseUrl</c>) já inclui o caminho do serviço (ex.: <c>.../pagamentos-lote/v1</c>).
 /// </summary>
 public class BbBankSlipPaymentApiClient(
     HttpClient httpClient,
@@ -24,7 +26,11 @@ public class BbBankSlipPaymentApiClient(
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        // O BB devolve alguns numéricos como string (ex.: codigoIdentificadorPagamento = "90024247731030001"
+        // na criação do lote, enquanto o id vem como número na consulta). Permite ler ambos.
+        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
     };
 
     public async Task<IResult<BbAccessTokenResponse>> GenerateAccessTokenAsync(string scope, CancellationToken cancellationToken = default)
@@ -59,64 +65,69 @@ public class BbBankSlipPaymentApiClient(
         }
     }
 
-    public async Task<IResult<CreateBatchPaymentResponse>> CreateBatchPaymentAsync(CreateBatchPaymentRequest request, CancellationToken cancellationToken = default)
-    {
-        var url = $"{_config.BaseUrl}/pagamentos-lote/boletos";
+    public Task<IResult<NextRequisitionNumbersResponse>> GetNextRequisitionNumbersAsync(int quantity, CancellationToken cancellationToken = default)
+        => GetAsync<NextRequisitionNumbersResponse>(
+            $"proximos-numeros-requisicao?{AppKey()}&quantidadeProximosNumeros={quantity}", cancellationToken);
 
+    public Task<IResult<GuiaBatchPaymentResponse>> CreateGuiaBatchPaymentAsync(GuiaBatchPaymentRequest request, CancellationToken cancellationToken = default)
+        => PostAsync<GuiaBatchPaymentRequest, GuiaBatchPaymentResponse>($"lotes-guias-codigo-barras?{AppKey()}", request, cancellationToken);
+
+    public Task<IResult<ReleasePaymentResponse>> ReleasePaymentAsync(ReleasePaymentRequest request, CancellationToken cancellationToken = default)
+        => PostAsync<ReleasePaymentRequest, ReleasePaymentResponse>($"liberar-pagamentos?{AppKey()}", request, cancellationToken);
+
+    public Task<IResult<GuiaPaymentResponse>> GetGuiaPaymentAsync(long idLancamento, int agencia, long contaCorrente, string digitoVerificador, CancellationToken cancellationToken = default)
+        => GetAsync<GuiaPaymentResponse>(
+            $"guias-codigo-barras/{idLancamento}?{AppKey()}&agencia={agencia}&contaCorrente={contaCorrente}&digitoVerificador={Uri.EscapeDataString(digitoVerificador)}", cancellationToken);
+
+    public Task<IResult<GuiaBatchPaymentResponse>> GetGuiaRequisitionAsync(long idRequisicao, int agencia, long contaCorrente, string digitoVerificador, CancellationToken cancellationToken = default)
+        => GetAsync<GuiaBatchPaymentResponse>(
+            $"lotes-guias-codigo-barras/{idRequisicao}/solicitacao?{AppKey()}&agencia={agencia}&contaCorrente={contaCorrente}&digitoVerificador={Uri.EscapeDataString(digitoVerificador)}", cancellationToken);
+
+    private string AppKey() => $"gw-dev-app-key={Uri.EscapeDataString(_config.ApiKey)}";
+
+    private string Url(string relative) => $"{_config.BaseUrl.TrimEnd('/')}/{relative}";
+
+    private async Task<IResult<TResponse>> GetAsync<TResponse>(string relative, CancellationToken cancellationToken)
+    {
         try
         {
-            var json = JsonSerializer.Serialize(request, JsonOptions);
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
-            httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
-            ConfigureAuthenticatedHeaders(httpRequest);
-
-            var response = await httpClient.SendAsync(httpRequest, cancellationToken);
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-                return Result<CreateBatchPaymentResponse>.Fail($"Erro ao criar lote de pagamento BB: {response.StatusCode} - {responseBody}", logger: logger);
-
-            var result = JsonSerializer.Deserialize<CreateBatchPaymentResponse>(responseBody, JsonOptions);
-
-            return result != null
-                ? Result<CreateBatchPaymentResponse>.Success(result)
-                : Result<CreateBatchPaymentResponse>.Fail("Resposta invalida da API BB (CreateBatchPayment).", logger: logger);
+            using var request = new HttpRequestMessage(HttpMethod.Get, Url(relative));
+            return await SendAsync<TResponse>(request, cancellationToken);
         }
         catch (Exception ex)
         {
-            return Result<CreateBatchPaymentResponse>.Fail(ex, logger: logger);
+            return Result<TResponse>.Fail(ex, logger: logger);
         }
     }
 
-    public async Task<IResult<BankSlipPaymentResponse>> GetPaymentAsync(long paymentId, string agency, string account, string digit, CancellationToken cancellationToken = default)
+    private async Task<IResult<TResponse>> PostAsync<TRequest, TResponse>(string relative, TRequest body, CancellationToken cancellationToken)
     {
-        var url = $"{_config.BaseUrl}/pagamentos-lote/boletos/{paymentId}?agencia={agency}&conta={account}&digitoConta={digit}";
-
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            ConfigureAuthenticatedHeaders(request);
-
-            var response = await httpClient.SendAsync(request, cancellationToken);
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-                return Result<BankSlipPaymentResponse>.Fail($"Erro ao consultar pagamento BB: {response.StatusCode} - {responseBody}", logger: logger);
-
-            var result = JsonSerializer.Deserialize<BankSlipPaymentResponse>(responseBody, JsonOptions);
-
-            return result != null
-                ? Result<BankSlipPaymentResponse>.Success(result)
-                : Result<BankSlipPaymentResponse>.Fail("Resposta invalida da API BB (GetPayment).", logger: logger);
+            var json = JsonSerializer.Serialize(body, JsonOptions);
+            using var request = new HttpRequestMessage(HttpMethod.Post, Url(relative))
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            return await SendAsync<TResponse>(request, cancellationToken);
         }
         catch (Exception ex)
         {
-            return Result<BankSlipPaymentResponse>.Fail(ex, logger: logger);
+            return Result<TResponse>.Fail(ex, logger: logger);
         }
     }
 
-    private void ConfigureAuthenticatedHeaders(HttpRequestMessage request)
+    private async Task<IResult<TResponse>> SendAsync<TResponse>(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        request.Headers.TryAddWithoutValidation("gw-dev-app-key", _config.ApiKey);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return Result<TResponse>.Fail($"Erro na API BB Pagamentos em Lote: {response.StatusCode} - {body}", logger: logger);
+
+        var result = JsonSerializer.Deserialize<TResponse>(body, JsonOptions);
+        return result is not null
+            ? Result<TResponse>.Success(result)
+            : Result<TResponse>.Fail("Resposta invalida da API BB (Pagamentos em Lote).", logger: logger);
     }
 }
