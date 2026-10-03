@@ -25,8 +25,12 @@ public class StripeConnectApiClient(IStripeClient client, ILogger<StripeConnectA
                 Type = "express",
                 Country = countryCode.ToUpperInvariant(),
                 Email = email,
+                // Transfers is the one the platform uses: it charges on its own account and moves
+                // the payee's share afterwards. Card payments is requested with it because some
+                // countries, Brazil among them, refuse an account that asks for transfers alone.
                 Capabilities = new AccountCapabilitiesOptions
                 {
+                    CardPayments = new AccountCapabilitiesCardPaymentsOptions { Requested = true },
                     Transfers = new AccountCapabilitiesTransfersOptions { Requested = true }
                 },
                 Metadata = metadata?.ToDictionary(e => e.Key, e => e.Value)
