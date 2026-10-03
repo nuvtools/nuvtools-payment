@@ -69,8 +69,8 @@
          siblings. That helper is for hand-rolled typed clients; Stripe's SDK retries on its own, and
          it is the one that re-sends a request's idempotency key when it does — which a generic retry
          handler in front of it would not guarantee for a call that moves money. -->
-    <PackageReference Include="Stripe.net" Version="52.4.2" />
-    <PackageReference Include="NuvTools.Common" Version="10.0.10" />
+    <PackageReference Include="Stripe.net" Version="53.0.0" />
+    <PackageReference Include="NuvTools.Common" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
   </ItemGroup>
