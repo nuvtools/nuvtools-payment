@@ -1,5 +1,6 @@
 using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.DTOs;
+using NuvTools.Payment.DTOs.Requests;
 
 namespace NuvTools.Payment.Contracts;
 
@@ -46,14 +47,10 @@ public interface IPaymentCustomerClient
     /// The saved method is reported by a webhook rather than by the return address, which the
     /// customer may never reach.
     /// </remarks>
-    /// <param name="customerId">Whose payment method is being saved.</param>
-    /// <param name="successUrl">Where the provider returns the customer once they have saved one.</param>
-    /// <param name="cancelUrl">Where it returns them if they give up.</param>
+    /// <param name="request">Whose method, where to return to, and the currency it will be charged in.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     Task<IResult<string>> CreateHostedPaymentMethodPageAsync(
-        string customerId,
-        string successUrl,
-        string cancelUrl,
+        HostedPaymentMethodPageRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>The customer's default payment method, or a failure when they have none.</summary>

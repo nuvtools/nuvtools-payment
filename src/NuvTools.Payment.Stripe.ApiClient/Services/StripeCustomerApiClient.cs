@@ -1,14 +1,21 @@
 using Microsoft.Extensions.Logging;
 using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.Contracts;
+using Microsoft.Extensions.Options;
 using NuvTools.Payment.DTOs;
+using NuvTools.Payment.DTOs.Requests;
+using NuvTools.Payment.Stripe.ApiClient.Configuration;
 using Stripe;
 
 namespace NuvTools.Payment.Stripe.ApiClient.Services;
 
 /// <inheritdoc cref="IPaymentCustomerClient" />
-public class StripeCustomerApiClient(IStripeClient client, ILogger<StripeCustomerApiClient> logger) : IPaymentCustomerClient
+public class StripeCustomerApiClient(
+    IStripeClient client,
+    IOptions<StripeApiClientConfig> config,
+    ILogger<StripeCustomerApiClient> logger) : IPaymentCustomerClient
 {
+    private readonly StripeApiClientConfig _config = config.Value;
     private readonly CustomerService _customers = new(client);
     private readonly SetupIntentService _setupIntents = new(client);
     private readonly global::Stripe.Checkout.SessionService _sessions = new(client);
@@ -48,19 +55,37 @@ public class StripeCustomerApiClient(IStripeClient client, ILogger<StripeCustome
         });
 
     public Task<IResult<string>> CreateHostedPaymentMethodPageAsync(
-        string customerId, string successUrl, string cancelUrl, CancellationToken cancellationToken = default) =>
-        StripeCall.RunAsync(logger, nameof(CreateHostedPaymentMethodPageAsync), async () =>
+        HostedPaymentMethodPageRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return StripeCall.RunAsync(logger, nameof(CreateHostedPaymentMethodPageAsync), async () =>
         {
-            var session = await _sessions.CreateAsync(new global::Stripe.Checkout.SessionCreateOptions
+            var options = new global::Stripe.Checkout.SessionCreateOptions
             {
                 Mode = "setup",
-                Customer = customerId,
-                SuccessUrl = successUrl,
-                CancelUrl = cancelUrl
-            }, cancellationToken: cancellationToken);
+                Customer = request.CustomerId,
+
+                // Nothing is priced on a setup session, but Stripe offers the methods that can pay
+                // in a currency, so it is told which one the customer will be charged in. Without
+                // it Stripe accepts the session only when the methods are named below.
+                Currency = string.IsNullOrWhiteSpace(request.CurrencyCode)
+                    ? null
+                    : request.CurrencyCode.Trim().ToLowerInvariant(),
+                SuccessUrl = request.SuccessUrl,
+                CancelUrl = request.CancelUrl
+            };
+
+            // Only when the application narrowed them; otherwise what the Stripe account has enabled
+            // for that currency is what the customer is offered.
+            if (_config.PaymentMethodTypes.Count > 0)
+                options.AllowedPaymentMethodTypes = [.. _config.PaymentMethodTypes];
+
+            var session = await _sessions.CreateAsync(options, cancellationToken: cancellationToken);
 
             return session.Url;
         });
+    }
 
     public Task<IResult<PaymentMethodDTO>> GetDefaultPaymentMethodAsync(string customerId, CancellationToken cancellationToken = default) =>
         StripeCall.RunAsync(logger, nameof(GetDefaultPaymentMethodAsync), async () =>

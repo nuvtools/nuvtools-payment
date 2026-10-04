@@ -65,14 +65,28 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
     "SecretKey": "sk_test_...",
     "WebhookSecret": "whsec_...",
     "ConnectWebhookSecret": "",
+    "ConnectAccountType": "express",
+    "ConnectCapabilities": [ "transfers" ],
+    "PaymentMethodTypes": [],
     "RequestTimeoutSeconds": 30,
     "MaxNetworkRetries": 2
   }
 }
 ```
 
-Every value but the timeouts is a secret, including both webhook secrets: they are what make an
-incoming webhook trustworthy.
+The key and both webhook secrets are secrets: they are what authenticate a call and make an incoming
+webhook trustworthy.
+
+The rest are **the application's decisions, not this package's**:
+
+| Setting | Default | |
+|---|---|---|
+| `ConnectAccountType` | `express` | The kind of connected account created for a payee: `express`, `standard` or `custom`. |
+| `ConnectCapabilities` | `transfers` | What a connected account asks for, by Stripe's names. Stripe decides per country which combinations it accepts — Brazil refuses `transfers` without `card_payments` — so an application lists what its payees' countries need. |
+| `PaymentMethodTypes` | empty | The methods a customer may save on the hosted page, by Stripe's names. Empty offers whatever the Stripe account has enabled for the currency of the request; an application that can only charge cards afterwards lists `card`. |
+
+The currency is not a setting: it changes per customer, so it travels in
+`HostedPaymentMethodPageRequest.CurrencyCode`.
 
 ### Registration
 
