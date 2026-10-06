@@ -7,7 +7,7 @@
 	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
 	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 	  <Description>Typed HTTP client for the Banco do Brasil Payments API. Supports OAuth2 token generation (client_credentials), batch bank slip (boleto) payment creation, and payment query. Returns NuvTools.Common ResultWrapper results.</Description>
-	  <Version>10.0.17</Version>
+	  <Version>10.0.18</Version>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 	  <PackageIcon>icon.png</PackageIcon>
