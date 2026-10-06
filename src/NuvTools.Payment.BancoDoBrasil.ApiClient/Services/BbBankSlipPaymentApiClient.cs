@@ -122,6 +122,10 @@ public class BbBankSlipPaymentApiClient(
         var response = await httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
+        // Trilha por chamada (sem query, que carrega app-key/conta): método + caminho + status.
+        logger.LogInformation("BB Pagamentos em Lote: {Method} {Path} -> {StatusCode}",
+            request.Method, request.RequestUri?.AbsolutePath, (int)response.StatusCode);
+
         if (!response.IsSuccessStatusCode)
             return Result<TResponse>.Fail($"Erro na API BB Pagamentos em Lote: {response.StatusCode} - {body}", logger: logger);
 

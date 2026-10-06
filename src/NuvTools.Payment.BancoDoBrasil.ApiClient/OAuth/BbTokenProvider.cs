@@ -40,6 +40,8 @@ public sealed class BbTokenProvider(
             if (TryGetValid(scope, out cached))
                 return cached;
 
+            logger.LogInformation("Token BB: solicitando (scope: {Scope})", scope);
+
             var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
 
             using var httpClient = httpClientFactory.CreateClient(nameof(BbTokenProvider));
@@ -69,6 +71,8 @@ public sealed class BbTokenProvider(
             var expiresIn = token.ExpiresIn > 0 ? token.ExpiresIn : 600;
             var expiry = DateTimeOffset.UtcNow.AddSeconds(expiresIn).AddMinutes(-1);
             _cache[scope] = new CachedToken(token.AccessToken!, expiry);
+
+            logger.LogInformation("Token BB: obtido (expira em {ExpiresIn}s)", expiresIn);
 
             return token.AccessToken!;
         }
