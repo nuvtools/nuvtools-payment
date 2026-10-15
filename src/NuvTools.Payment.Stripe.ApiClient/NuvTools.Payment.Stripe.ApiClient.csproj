@@ -7,7 +7,7 @@
 	  <Copyright>Copyright © 2026 Nuv Tools</Copyright>
 	  <PackageProjectUrl>https://nuvtools.com</PackageProjectUrl>
 	  <Description>Typed client for Stripe, covering customers and saved payment methods, Connect Express onboarding, separate charges and transfers, and webhook signature verification. Wraps the official Stripe.net SDK and returns NuvTools.Common ResultWrapper results.</Description>
-	  <Version>10.0.3</Version>
+	  <Version>10.0.4</Version>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 	  <PackageIcon>icon.png</PackageIcon>
@@ -70,9 +70,9 @@
          it is the one that re-sends a request's idempotency key when it does — which a generic retry
          handler in front of it would not guarantee for a call that moves money. -->
     <PackageReference Include="Stripe.net" Version="53.0.0" />
-    <PackageReference Include="NuvTools.Common" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
+    <PackageReference Include="NuvTools.Common" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.13" />
   </ItemGroup>
 
 </Project>
