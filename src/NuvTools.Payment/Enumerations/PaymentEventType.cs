@@ -35,5 +35,23 @@ public enum PaymentEventType
     /// why it is worth acting on rather than inferring from the caller's own refund call: the
     /// caller's records are otherwise the last to know.
     /// </remarks>
-    PaymentRefunded = 5
+    PaymentRefunded = 5,
+
+    /// <summary>
+    /// A provider-hosted checkout was completed. Its purpose is in
+    /// <see cref="DTOs.PaymentEventDTO.CheckoutType"/>; a caller acts only on the ones it opened.
+    /// </summary>
+    CheckoutCompleted = 6,
+
+    /// <summary>A subscription was started or changed — its plan, its status, its renewal.</summary>
+    SubscriptionChanged = 7,
+
+    /// <summary>A subscription ended.</summary>
+    SubscriptionEnded = 8,
+
+    /// <summary>A subscription's invoice was paid.</summary>
+    InvoicePaid = 9,
+
+    /// <summary>Paying a subscription's invoice failed; the provider may retry it.</summary>
+    InvoicePaymentFailed = 10
 }

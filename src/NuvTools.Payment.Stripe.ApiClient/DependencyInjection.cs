@@ -16,8 +16,8 @@ public static class DependencyInjection
 
     /// <summary>
     /// Binds the <c>Stripe</c> configuration section and registers Stripe behind the
-    /// <c>NuvTools.Payment</c> contracts — the customer, payee account, charge, refund and webhook
-    /// clients.
+    /// <c>NuvTools.Payment</c> contracts — the customer, payee account, charge, refund, subscription
+    /// and webhook clients.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IPayeeAccountClient, StripeConnectApiClient>();
         services.AddScoped<IPaymentChargeClient, StripeChargeApiClient>();
         services.AddScoped<IPaymentRefundClient, StripeRefundApiClient>();
+        services.AddScoped<IPaymentSubscriptionClient, StripeSubscriptionApiClient>();
         services.AddSingleton<IPaymentWebhookVerifier, StripeWebhookVerifier>();
 
         return services;

@@ -31,6 +31,11 @@ namespace NuvTools.Payment.DTOs;
 /// <param name="PaymentMethodId">The payment method the event is about, when it names one.</param>
 /// <param name="FailureReason">Why the provider refused, on an event that reports a refusal.</param>
 /// <param name="PayloadJson">The raw body, exactly as it was signed.</param>
+/// <param name="SubscriptionId">
+/// The subscription the event is about — the subscription itself, the one a completed checkout
+/// started, or the one an invoice bills — when it is about one.
+/// </param>
+/// <param name="CheckoutType">What a completed checkout was opened for, on <see cref="PaymentEventType.CheckoutCompleted"/>.</param>
 public record PaymentEventDTO(
     string EventId,
     PaymentEventType Type,
@@ -40,4 +45,6 @@ public record PaymentEventDTO(
     string? CustomerId,
     string? PaymentMethodId,
     string? FailureReason,
-    string PayloadJson);
+    string PayloadJson,
+    string? SubscriptionId = null,
+    PaymentCheckoutType? CheckoutType = null);

@@ -34,6 +34,13 @@ internal static class StripeEventReader
     /// </summary>
     public const string ChargeRefunded = "charge.refunded";
 
+    public const string CheckoutSessionCompleted = "checkout.session.completed";
+    public const string SubscriptionCreated = "customer.subscription.created";
+    public const string SubscriptionUpdated = "customer.subscription.updated";
+    public const string SubscriptionDeleted = "customer.subscription.deleted";
+    public const string InvoicePaid = "invoice.paid";
+    public const string InvoicePaymentFailed = "invoice.payment_failed";
+
     public static PaymentEventDTO Read(Event stripeEvent, string payload)
     {
         var type = Type(stripeEvent.Type);
@@ -56,7 +63,9 @@ internal static class StripeEventReader
             Value(payload, "customer"),
             Value(payload, "payment_method"),
             Value(payload, "last_payment_error", "message"),
-            payload);
+            payload,
+            SubscriptionIdOf(type, objectId, payload),
+            type == PaymentEventType.CheckoutCompleted ? CheckoutTypeOf(Value(payload, "mode")) : null);
     }
 
     private static PaymentEventType Type(string? stripeType) => stripeType switch
@@ -66,7 +75,38 @@ internal static class StripeEventReader
         PaymentIntentSucceeded => PaymentEventType.PaymentSucceeded,
         PaymentIntentFailed => PaymentEventType.PaymentFailed,
         ChargeRefunded => PaymentEventType.PaymentRefunded,
+        CheckoutSessionCompleted => PaymentEventType.CheckoutCompleted,
+        SubscriptionCreated or SubscriptionUpdated => PaymentEventType.SubscriptionChanged,
+        SubscriptionDeleted => PaymentEventType.SubscriptionEnded,
+        InvoicePaid => PaymentEventType.InvoicePaid,
+        InvoicePaymentFailed => PaymentEventType.InvoicePaymentFailed,
         _ => PaymentEventType.Unknown
+    };
+
+    /// <summary>
+    /// The subscription an event is about: the object itself on a subscription event, the one a
+    /// checkout started, or the one an invoice bills.
+    /// </summary>
+    /// <remarks>
+    /// An invoice names its subscription under <c>parent.subscription_details</c> since API version
+    /// 2025-03-31 and directly before it; both are read, so the reader works whichever version the
+    /// endpoint is pinned to.
+    /// </remarks>
+    private static string? SubscriptionIdOf(PaymentEventType type, string? objectId, string payload) => type switch
+    {
+        PaymentEventType.SubscriptionChanged or PaymentEventType.SubscriptionEnded => objectId,
+        PaymentEventType.CheckoutCompleted => Value(payload, "subscription"),
+        PaymentEventType.InvoicePaid or PaymentEventType.InvoicePaymentFailed =>
+            Value(payload, "parent", "subscription_details", "subscription") ?? Value(payload, "subscription"),
+        _ => null
+    };
+
+    private static PaymentCheckoutType CheckoutTypeOf(string? mode) => mode switch
+    {
+        "payment" => PaymentCheckoutType.Payment,
+        "setup" => PaymentCheckoutType.Setup,
+        "subscription" => PaymentCheckoutType.Subscription,
+        _ => PaymentCheckoutType.Unknown
     };
 
     /// <summary>One value out of <c>data.object</c>, by path, or null when it is not there.</summary>

@@ -10,5 +10,6 @@
     <Project Path="src\NuvTools.Payment\NuvTools.Payment.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests\NuvTools.Payment.Stripe.ApiClient.Tests\NuvTools.Payment.Stripe.ApiClient.Tests.csproj" />
   </Folder>
 </Solution>

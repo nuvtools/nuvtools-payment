@@ -23,12 +23,18 @@ capabilities, and they are declared here so that the application layer never ref
 | `IPayeeAccountClient` | An account the platform can pay, and the hosted onboarding that makes it payable |
 | `IPaymentChargeClient` | Charging a customer, and transferring to a payee — two calls, never one destination charge |
 | `IPaymentRefundClient` | Giving money back, in whole or in part. Its own contract because refunding is not the inverse of charging: it names a payment rather than a customer, and a caller that may charge is not automatically one that may refund |
+| `IPaymentSubscriptionClient` | Recurring billing run by the provider: a hosted checkout that starts a subscription to a price found by its lookup key, the hosted page where the customer manages it, and the subscription as it stands now |
 | `IPaymentWebhookVerifier` | The signature check, and the payload read into the fields a caller acts on |
 
 Amounts are always in the currency's **minor units**; `PaymentMoney` converts, rounding once.
 `PaymentStatusType` and `PaymentEventType` are the provider-neutral vocabularies a client maps its
-own onto — four payment outcomes and five kinds of event, because those are the ones that change what
-the caller does next.
+own onto — four payment outcomes and the kinds of event that change what the caller does next.
+`PaymentSubscriptionStatusType` does the same for a subscription, and a completed checkout carries a
+`PaymentCheckoutType`, so two services sharing one provider account each act only on their own.
+
+**A subscription's state is read, not pieced together from events.** Events arrive at least once and in
+no guaranteed order, so a caller that receives one about a subscription asks
+`IPaymentSubscriptionClient.GetSubscriptionAsync` for where it stands and stores that.
 
 **Refunding does not claw back a payee.** The money already transferred is the caller's to reconcile,
 by netting it off what that payee is owed next. Providers do offer a transfer reversal, and using it
@@ -55,7 +61,11 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
   destination charge cannot express
 - Full and partial **refunds**, deliberately without `ReverseTransfer`
 - Caller-supplied idempotency keys on every money-moving call
-- Webhook signature verification, with a separate secret for the Connect endpoint
+- **Subscriptions** on Stripe Billing: Checkout in subscription mode with the price found by its
+  lookup key, the customer portal, and the subscription read with its status, price key and period
+- Webhook signature verification, with a separate secret for the Connect endpoint, and the
+  subscription, checkout and invoice events read into `PaymentEventDTO.SubscriptionId` and
+  `CheckoutType`
 
 ### Configuration
 
@@ -95,7 +105,7 @@ services.AddStripeApiClient(configuration);
 ```
 
 Injects Stripe behind `IPaymentCustomerClient`, `IPayeeAccountClient`, `IPaymentChargeClient`,
-`IPaymentRefundClient` and `IPaymentWebhookVerifier` — so this call, in the composition root, is the
+`IPaymentRefundClient`, `IPaymentSubscriptionClient` and `IPaymentWebhookVerifier` — so this call, in the composition root, is the
 only place the application names Stripe. Each method returns `IResult<T>`, so a declined card is a result to read rather than an
 exception to catch.
 
