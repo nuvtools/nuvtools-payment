@@ -33,6 +33,24 @@ public class StripeApiClientConfig
     public string ConnectAccountType { get; set; } = "express";
 
     /// <summary>
+    /// The Stripe Dashboard a connected account gets: <c>express</c>, <c>full</c> or <c>none</c>. Blank
+    /// creates the account by <see cref="ConnectAccountType"/> instead, the older way.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Set, it creates the account with controller properties rather than a type. <c>none</c> means the
+    /// payee never signs in to Stripe — the embedded onboarding asks for no Stripe authentication —
+    /// and sees their payouts only in the application; the platform then pays Stripe's fees and
+    /// answers for the account's losses, which Stripe requires of an account without a dashboard,
+    /// while Stripe still collects and verifies the requirements.
+    /// </para>
+    /// <para>
+    /// Permanent per account: Stripe cannot change a connected account's dashboard afterwards.
+    /// </para>
+    /// </remarks>
+    public string ConnectDashboardType { get; set; } = string.Empty;
+
+    /// <summary>
     /// The capabilities requested for a connected account, by Stripe's own names —
     /// <c>transfers</c>, <c>card_payments</c>. Empty requests <c>transfers</c> alone, the least an
     /// account that is paid by transfer needs.

@@ -1,5 +1,6 @@
 using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.DTOs;
+using NuvTools.Payment.DTOs.Requests;
 
 namespace NuvTools.Payment.Contracts;
 
@@ -22,6 +23,30 @@ public interface IPayeeAccountClient
         string countryCode,
         string email,
         IDictionary<string, string>? metadata = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates an account able to receive transfers, prefilled with what the application knows about
+    /// its owner, and returns the provider's identifier for it.
+    /// </summary>
+    /// <param name="request">The country, the address, and the optional prefill.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<string>> CreateAccountAsync(
+        PayeeAccountRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A short-lived secret that lets the provider's embeddable onboarding run inside the
+    /// application's own page, for this account only.
+    /// </summary>
+    /// <remarks>
+    /// The alternative to <see cref="CreateOnboardingLinkAsync"/>: the payee never leaves the
+    /// application. The secret is handed to the browser and used at once, never stored.
+    /// </remarks>
+    /// <param name="accountId">The account being onboarded.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<string>> CreateOnboardingSessionAsync(
+        string accountId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
