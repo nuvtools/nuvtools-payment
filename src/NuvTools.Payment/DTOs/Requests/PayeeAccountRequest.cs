@@ -22,6 +22,9 @@ public record PayeeAccountRequest(string CountryCode, string Email)
     /// <summary>The company's details, when <see cref="BusinessType"/> is <see cref="PayeeBusinessType.Company"/>.</summary>
     public PayeeCompany? Company { get; init; }
 
+    /// <summary>What the payee does, when the application knows it up front.</summary>
+    public PayeeBusinessProfile? BusinessProfile { get; init; }
+
     /// <summary>Carried on the provider's object; the caller's own identifiers belong here.</summary>
     public IDictionary<string, string>? Metadata { get; init; }
 }

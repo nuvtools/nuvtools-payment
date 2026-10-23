@@ -138,4 +138,128 @@ public class StripeConnectApiClientTests
         Assert.Contains("components[account_onboarding][enabled]=true", form);
         Assert.DoesNotContain("disable_stripe_user_authentication", form);
     }
+
+    private const string UpdatedAccountJson = """
+        {"id":"acct_1","object":"account","charges_enabled":false,"payouts_enabled":false,"details_submitted":true,
+         "requirements":{"currently_due":["person_1.verification.proof_of_liveness"],"eventually_due":["person_1.verification.proof_of_liveness"],
+           "past_due":[],"pending_verification":["individual.id_number"],"current_deadline":1700000000,"disabled_reason":"requirements.past_due",
+           "errors":[{"requirement":"individual.dob.year","code":"invalid_dob_age_under_minimum","reason":"Too young."}]},
+         "external_accounts":{"object":"list","data":[{"id":"ba_1","object":"bank_account","bank_name":"STRIPE TEST BANK","last4":"1234","currency":"brl","default_for_currency":true}]}}
+        """;
+
+    [Fact]
+    public async Task AnUpdate_PassesTheTokensOn_WithoutATermsAcceptanceOfItsOwn()
+    {
+        var (client, stub) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1", UpdatedAccountJson));
+
+        var result = await client.UpdateAccountAsync("acct_1", new PayeeAccountUpdateRequest
+        {
+            AccountToken = "ct_1",
+            ExternalAccountToken = "btok_1",
+            BusinessProfile = new PayeeBusinessProfile("7372", ProductDescription: "API access", MonthlyEstimatedRevenueMinor: 100000, Currency: "BRL")
+        });
+
+        Assert.True(result.Succeeded);
+
+        var form = Form(stub, "/v1/accounts/acct_1");
+
+        Assert.Contains("account_token=ct_1", form);
+        Assert.Contains("external_account=btok_1", form);
+        Assert.Contains("business_profile[mcc]=7372", form);
+        Assert.Contains("business_profile[product_description]=API access", form);
+        Assert.Contains("business_profile[monthly_estimated_revenue][amount]=100000", form);
+        Assert.Contains("business_profile[monthly_estimated_revenue][currency]=brl", form);
+        Assert.DoesNotContain("tos_acceptance", form);
+        Assert.DoesNotContain("business_profile[url]", form);
+    }
+
+    [Fact]
+    public async Task TheAccount_SaysWhatIsStillDue_AndOnlyTheEndOfItsBankAccount()
+    {
+        var (client, _) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1", UpdatedAccountJson));
+
+        var result = await client.GetAccountAsync("acct_1");
+
+        Assert.True(result.Succeeded);
+
+        var requirements = result.Data!.Requirements!;
+
+        Assert.Equal(["person_1.verification.proof_of_liveness"], requirements.CurrentlyDue);
+        Assert.Equal(["individual.id_number"], requirements.PendingVerification);
+        Assert.Equal("invalid_dob_age_under_minimum", Assert.Single(requirements.Errors).Code);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), requirements.CurrentDeadline);
+        Assert.Equal(new DTOs.PayeePayoutDestinationDTO("STRIPE TEST BANK", "1234", "brl"), result.Data.PayoutDestination);
+    }
+
+    [Fact]
+    public async Task AnUpdateWithNothingButAToken_SendsNoBusinessProfile()
+    {
+        var (client, stub) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1", UpdatedAccountJson));
+
+        await client.UpdateAccountAsync("acct_1", new PayeeAccountUpdateRequest { AccountToken = "ct_1", BusinessProfile = new PayeeBusinessProfile() });
+
+        var form = Form(stub, "/v1/accounts/acct_1");
+
+        Assert.Contains("account_token=ct_1", form);
+        Assert.DoesNotContain("business_profile", form);
+        Assert.DoesNotContain("external_account", form);
+    }
+
+    [Fact]
+    public async Task AnUpdateWithABankAccountAlone_LeavesTheLegalEntityAsItWas()
+    {
+        var (client, stub) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1", UpdatedAccountJson));
+
+        await client.UpdateAccountAsync("acct_1", new PayeeAccountUpdateRequest { ExternalAccountToken = "btok_1" });
+
+        Assert.Equal("external_account=btok_1", Form(stub, "/v1/accounts/acct_1"));
+    }
+
+    [Fact]
+    public async Task APersonToken_RegistersANewPerson_OrChangesTheOneNamed()
+    {
+        var stub = new StubStripeHandler()
+            .Answer("/v1/accounts/acct_1/persons/person_9", """{"id":"person_9","object":"person"}""")
+            .Answer("/v1/accounts/acct_1/persons", """{"id":"person_1","object":"person"}""");
+        var (client, _) = Create(stub);
+
+        var created = await client.SavePersonAsync("acct_1", "cpt_1");
+        var changed = await client.SavePersonAsync("acct_1", "cpt_2", "person_9");
+
+        Assert.Equal("person_1", created.Data);
+        Assert.Equal("person_9", changed.Data);
+        Assert.Contains("person_token=cpt_1", Form(stub, "/v1/accounts/acct_1/persons"));
+        Assert.Contains("person_token=cpt_2", Form(stub, "/v1/accounts/acct_1/persons/person_9"));
+    }
+
+    [Fact]
+    public async Task ThePersons_AreListedWithTheirRoles()
+    {
+        var (client, _) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1/persons", """
+            {"object":"list","has_more":false,"data":[{"id":"person_1","object":"person","first_name":"Ana","last_name":"Souza",
+              "relationship":{"representative":true,"owner":true,"director":false,"executive":true,"percent_ownership":60,"title":"CEO"}}]}
+            """));
+
+        var result = await client.GetPersonsAsync("acct_1");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(new DTOs.PayeePersonDTO("person_1", "Ana", "Souza", true, true, false, true, 60m, "CEO"), Assert.Single(result.Data!));
+    }
+
+    [Fact]
+    public async Task RemovingAPerson_DeletesIt_AndARefusalIsAResult()
+    {
+        var stub = new StubStripeHandler()
+            .Answer("/v1/accounts/acct_1/persons/person_1", """{"id":"person_1","object":"person","deleted":true}""")
+            .Answer("/v1/accounts/acct_1/persons/person_2", """{"error":{"message":"The representative cannot be removed.","type":"invalid_request_error"}}""", System.Net.HttpStatusCode.BadRequest);
+        var (client, _) = Create(stub);
+
+        var removed = await client.RemovePersonAsync("acct_1", "person_1");
+        var refused = await client.RemovePersonAsync("acct_1", "person_2");
+
+        Assert.True(removed.Succeeded);
+        Assert.Equal(HttpMethod.Delete, stub.Requests[0].Method);
+        Assert.False(refused.Succeeded);
+        Assert.Contains("representative", refused.Messages[0].Title);
+    }
 }

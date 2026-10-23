@@ -8,9 +8,10 @@ namespace NuvTools.Payment.Contracts;
 /// The receiving side: an account the platform can pay, and the onboarding that makes it payable.
 /// </summary>
 /// <remarks>
-/// A marketplace pays people it has not vetted itself. The provider collects the identity and bank
-/// details, decides whether the account may be paid out, and hosts the screens that ask — so none of
-/// that reaches the platform, which is the point of using one.
+/// A marketplace pays people it has not vetted itself. The provider verifies the identity and bank
+/// details and decides whether the account may be paid out. The screens that ask are the provider's
+/// own — hosted, or embedded in the application — or the application's, which then sends the
+/// details as tokens the payee's browser obtained, so they never reach the platform either way.
 /// </remarks>
 public interface IPayeeAccountClient
 {
@@ -61,6 +62,48 @@ public interface IPayeeAccountClient
         string accountId,
         string refreshUrl,
         string returnUrl,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Changes the account: its legal entity, terms acceptance and bank account as tokens the payee's
+    /// browser obtained from the provider, and what it does. Answers the account as it then stands.
+    /// </summary>
+    /// <param name="accountId">The account to change.</param>
+    /// <param name="request">The tokens and the business profile; anything left out stays as it was.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<PayeeAccountDTO>> UpdateAccountAsync(
+        string accountId,
+        PayeeAccountUpdateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>The people registered on a company account.</summary>
+    /// <param name="accountId">The company's account.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<IReadOnlyList<PayeePersonDTO>>> GetPersonsAsync(
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Registers a person on a company account, or changes one already there, from a provider person
+    /// token the payee's browser obtained. Answers the person's identifier.
+    /// </summary>
+    /// <param name="accountId">The company's account.</param>
+    /// <param name="personToken">The person's details, as a provider person token.</param>
+    /// <param name="personId">The person to change; <see langword="null"/> registers a new one.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<string>> SavePersonAsync(
+        string accountId,
+        string personToken,
+        string? personId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Removes a person registered on a company account by mistake.</summary>
+    /// <param name="accountId">The company's account.</param>
+    /// <param name="personId">The person to remove.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult> RemovePersonAsync(
+        string accountId,
+        string personId,
         CancellationToken cancellationToken = default);
 
     /// <summary>What the provider currently says about the account.</summary>

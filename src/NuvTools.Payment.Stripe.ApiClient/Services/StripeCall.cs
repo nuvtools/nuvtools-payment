@@ -42,4 +42,23 @@ internal static class StripeCall
             return Result<T>.Fail(exception.StripeError?.Message ?? exception.Message);
         }
     }
+
+    /// <summary>One call to Stripe that answers nothing but whether it worked.</summary>
+    public static async Task<IResult> RunAsync(ILogger logger, string operation, Func<Task> call)
+    {
+        try
+        {
+            await call();
+
+            return Result.Success();
+        }
+        catch (StripeException exception)
+        {
+            logger.LogWarning(exception,
+                "Stripe refused {Operation}: {Code} (request {RequestId}).",
+                operation, exception.StripeError?.Code, exception.StripeResponse?.RequestId);
+
+            return Result.Fail(exception.StripeError?.Message ?? exception.Message);
+        }
+    }
 }

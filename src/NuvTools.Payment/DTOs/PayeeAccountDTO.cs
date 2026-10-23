@@ -23,4 +23,14 @@ public record PayeeAccountDTO(
     bool ChargesEnabled,
     bool PayoutsEnabled,
     bool DetailsSubmitted,
-    string? DisabledReason);
+    string? DisabledReason)
+{
+    /// <summary>
+    /// What the provider still needs, field by field, for an application that collects the details
+    /// in a form of its own. <see langword="null"/> when the provider did not say.
+    /// </summary>
+    public PayeeRequirementsDTO? Requirements { get; init; }
+
+    /// <summary>Where the account is paid out, when a bank account was given.</summary>
+    public PayeePayoutDestinationDTO? PayoutDestination { get; init; }
+}

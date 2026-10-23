@@ -10,7 +10,7 @@ Payment abstraction library and API clients for Brazilian financial services. Pa
 | **NuvTools.Payment.BancoDoBrasil.ApiClient** | net10.0 | API client for Banco do Brasil bank slip payment services. |
 | **NuvTools.Payment.Sicoob.ApiClient** | net10.0 | API client for Sicoob bank slip services. |
 | **NuvTools.Payment.Omie.ApiClient** | net10.0 | API client for Omie ERP: service orders, accounts receivable, and bank slip (boleto) generation. |
-| **NuvTools.Payment.Stripe.ApiClient** | net10.0 | Stripe's implementation of the `NuvTools.Payment` contracts: customers and saved payment methods, Connect Express onboarding, separate charges and transfers, refunds, and webhook signature verification. |
+| **NuvTools.Payment.Stripe.ApiClient** | net10.0 | Stripe's implementation of the `NuvTools.Payment` contracts: customers and saved payment methods, Connect onboarding, separate charges and transfers, refunds, and webhook signature verification. |
 
 ## NuvTools.Payment — the card-provider contracts
 
@@ -20,7 +20,7 @@ capabilities, and they are declared here so that the application layer never ref
 | Contract | What it is for |
 |---|---|
 | `IPaymentCustomerClient` | Who is charged, and the payment method they saved — including a provider-hosted page, so no card and no provider script reach the caller's own origin |
-| `IPayeeAccountClient` | An account the platform can pay, and the hosted onboarding that makes it payable |
+| `IPayeeAccountClient` | An account the platform can pay, and the onboarding that makes it payable — the provider's screens, or the application's own form sending tokens |
 | `IPaymentChargeClient` | Charging a customer, and transferring to a payee — two calls, never one destination charge |
 | `IPaymentRefundClient` | Giving money back, in whole or in part. Its own contract because refunding is not the inverse of charging: it names a payment rather than a customer, and a caller that may charge is not automatically one that may refund |
 | `IPaymentSubscriptionClient` | Recurring billing run by the provider: a hosted checkout that starts a subscription to a price found by its lookup key, the hosted page where the customer manages it, and the subscription as it stands now |
@@ -56,7 +56,12 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
 ### Features
 
 - Customers and saved payment methods (`SetupIntent`, off-session, and a hosted Checkout page)
-- Connect **Express** onboarding: account, hosted account link, and account status
+- Connect onboarding: account (by type, or by controller properties with `ConnectDashboardType`), hosted
+  account link, embedded account session, and account status with what is still due field by field
+- **The application's own onboarding form** without identity data on its servers: the browser turns the
+  details into account, person and bank-account tokens with Stripe.js and the publishable key, and
+  `UpdateAccountAsync` / `SavePersonAsync` pass the tokens on. The terms acceptance goes inside the
+  account token (`tos_shown_and_accepted`): Stripe refuses `tos_acceptance` next to one
 - **Separate charges and transfers** - one charge can pay several connected accounts, which a
   destination charge cannot express
 - Full and partial **refunds**, deliberately without `ReverseTransfer`
@@ -91,7 +96,9 @@ The rest are **the application's decisions, not this package's**:
 
 | Setting | Default | |
 |---|---|---|
-| `ConnectAccountType` | `express` | The kind of connected account created for a payee: `express`, `standard` or `custom`. |
+| `ConnectAccountType` | `express` | The kind of connected account created for a payee: `express`, `standard` or `custom`. Read only when `ConnectDashboardType` is blank. |
+| `ConnectDashboardType` | blank | `express`, `full` or `none`: creates the account by controller properties instead of a type. `none` makes the platform pay Stripe's fees and answer for losses. |
+| `ConnectRequirementCollection` | `stripe` | `application` makes the platform keep the account's information up to date, which is what lets it collect the details in a form of its own, and turns Stripe's sign-in off in the embedded onboarding. |
 | `ConnectCapabilities` | `transfers` | What a connected account asks for, by Stripe's names. Stripe decides per country which combinations it accepts — Brazil refuses `transfers` without `card_payments` — so an application lists what its payees' countries need. |
 | `PaymentMethodTypes` | empty | The methods a customer may save on the hosted page, by Stripe's names. Empty offers whatever the Stripe account has enabled for the currency of the request; an application that can only charge cards afterwards lists `card`. |
 
