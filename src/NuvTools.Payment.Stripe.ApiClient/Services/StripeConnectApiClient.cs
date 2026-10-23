@@ -66,7 +66,15 @@ public class StripeConnectApiClient(
                 Account = accountId,
                 Components = new AccountSessionComponentsOptions
                 {
-                    AccountOnboarding = new AccountSessionComponentsAccountOnboardingOptions { Enabled = true }
+                    AccountOnboarding = new AccountSessionComponentsAccountOnboardingOptions
+                    {
+                        Enabled = true,
+                        // Stripe allows turning its sign-in off only where the platform keeps the
+                        // account's information up to date; elsewhere it insists on it.
+                        Features = PlatformCollects()
+                            ? new AccountSessionComponentsAccountOnboardingFeaturesOptions { DisableStripeUserAuthentication = true }
+                            : null
+                    }
                 }
             }, cancellationToken: cancellationToken);
 
@@ -102,7 +110,7 @@ public class StripeConnectApiClient(
     /// </summary>
     /// <remarks>
     /// Without a Stripe Dashboard, Stripe requires the platform to pay the fees and answer for the
-    /// losses; it still collects the requirements itself, so its onboarding stays the one that asks.
+    /// losses. Who keeps the requirements up to date is configured separately.
     /// </remarks>
     private void ApplyKind(AccountCreateOptions options)
     {
@@ -117,7 +125,7 @@ public class StripeConnectApiClient(
         options.Controller = new AccountControllerOptions
         {
             StripeDashboard = new AccountControllerStripeDashboardOptions { Type = dashboard },
-            RequirementCollection = "stripe"
+            RequirementCollection = RequirementCollection()
         };
 
         if (dashboard == "none")
@@ -126,6 +134,13 @@ public class StripeConnectApiClient(
             options.Controller.Losses = new AccountControllerLossesOptions { Payments = "application" };
         }
     }
+
+    private string RequirementCollection() =>
+        string.IsNullOrWhiteSpace(_config.ConnectRequirementCollection) ? "stripe" : _config.ConnectRequirementCollection.Trim().ToLowerInvariant();
+
+    /// <summary>Whether accounts are created with the platform keeping their requirements up to date.</summary>
+    private bool PlatformCollects() =>
+        !string.IsNullOrWhiteSpace(_config.ConnectDashboardType) && RequirementCollection() == "application";
 
     /// <summary>What the application already knows, for the onboarding to show rather than ask.</summary>
     private static void ApplyPrefill(AccountCreateOptions options, PayeeAccountRequest request)

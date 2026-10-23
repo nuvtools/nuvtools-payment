@@ -53,6 +53,24 @@ public class StripeConnectApiClientTests
     }
 
     [Fact]
+    public async Task WhenThePlatformCollects_TheAccountSaysSo_AndTheSessionTurnsStripesSignInOff()
+    {
+        var (client, stub) = Create(new StubStripeHandler()
+            .Answer("/v1/accounts", AccountJson)
+            .Answer("/v1/account_sessions", """{"object":"account_session","account":"acct_1","client_secret":"accs_secret_1","expires_at":1700000000}"""), c =>
+        {
+            c.ConnectDashboardType = "none";
+            c.ConnectRequirementCollection = "application";
+        });
+
+        await client.CreateAccountAsync(new PayeeAccountRequest("BR", "ana@nuvtools.test"));
+        await client.CreateOnboardingSessionAsync("acct_1");
+
+        Assert.Contains("controller[requirement_collection]=application", Form(stub, "/v1/accounts"));
+        Assert.Contains("components[account_onboarding][features][disable_stripe_user_authentication]=true", Form(stub, "/v1/account_sessions"));
+    }
+
+    [Fact]
     public async Task WithoutADashboardSetting_TheAccountKeepsTheOlderType()
     {
         var (client, stub) = Create(new StubStripeHandler().Answer("/v1/accounts", AccountJson));
@@ -118,5 +136,6 @@ public class StripeConnectApiClientTests
 
         Assert.Contains("account=acct_1", form);
         Assert.Contains("components[account_onboarding][enabled]=true", form);
+        Assert.DoesNotContain("disable_stripe_user_authentication", form);
     }
 }

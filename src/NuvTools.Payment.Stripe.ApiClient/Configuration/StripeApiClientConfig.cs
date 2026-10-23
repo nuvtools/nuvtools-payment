@@ -41,14 +41,29 @@ public class StripeApiClientConfig
     /// Set, it creates the account with controller properties rather than a type. <c>none</c> means the
     /// payee never signs in to Stripe — the embedded onboarding asks for no Stripe authentication —
     /// and sees their payouts only in the application; the platform then pays Stripe's fees and
-    /// answers for the account's losses, which Stripe requires of an account without a dashboard,
-    /// while Stripe still collects and verifies the requirements.
+    /// answers for the account's losses, which Stripe requires of an account without a dashboard.
+    /// Who collects the requirements is <see cref="ConnectRequirementCollection"/>.
     /// </para>
     /// <para>
     /// Permanent per account: Stripe cannot change a connected account's dashboard afterwards.
     /// </para>
     /// </remarks>
     public string ConnectDashboardType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Who keeps a connected account's information up to date when Stripe's requirements change:
+    /// <c>stripe</c> (the default) or <c>application</c>. Read only when
+    /// <see cref="ConnectDashboardType"/> is set.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With <c>stripe</c>, Stripe's embedded components ask the payee to sign in to Stripe before they
+    /// write the account's legal details. With <c>application</c> — allowed only without a Stripe
+    /// Dashboard — the onboarding session turns that sign-in off, and the application answers for
+    /// bringing the payee back to the onboarding whenever Stripe asks for more.
+    /// </para>
+    /// </remarks>
+    public string ConnectRequirementCollection { get; set; } = "stripe";
 
     /// <summary>
     /// The capabilities requested for a connected account, by Stripe's own names —
