@@ -26,6 +26,17 @@ public interface IPaymentCustomerClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Deletes the customer at the provider, for a payer who no longer pays there: its saved payment
+    /// methods go with it, and the provider cancels any subscription it still had. The provider keeps
+    /// the charges and invoices the law requires it to.
+    /// </summary>
+    /// <param name="customerId">The customer to delete.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult> DeleteCustomerAsync(
+        string customerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// An attempt at saving a payment method for later, off-session use, for a caller that hosts its
     /// own form.
     /// </summary>

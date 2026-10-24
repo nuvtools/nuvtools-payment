@@ -20,6 +20,12 @@ public class StripeCustomerApiClient(
     private readonly SetupIntentService _setupIntents = new(client);
     private readonly global::Stripe.Checkout.SessionService _sessions = new(client);
 
+    public Task<IResult> DeleteCustomerAsync(string customerId, CancellationToken cancellationToken = default) =>
+        StripeCall.RunAsync(logger, nameof(DeleteCustomerAsync), async () =>
+        {
+            await _customers.DeleteAsync(customerId, cancellationToken: cancellationToken);
+        });
+
     public Task<IResult<string>> CreateCustomerAsync(
         string email, string? name, IDictionary<string, string>? metadata = null, CancellationToken cancellationToken = default) =>
         StripeCall.RunAsync(logger, nameof(CreateCustomerAsync), async () =>
