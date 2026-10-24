@@ -170,6 +170,12 @@ public class StripeConnectApiClient(
             await _persons.DeleteAsync(accountId, personId, cancellationToken: cancellationToken);
         });
 
+    public Task<IResult> DeleteAccountAsync(string accountId, CancellationToken cancellationToken = default) =>
+        StripeCall.RunAsync(logger, nameof(DeleteAccountAsync), async () =>
+        {
+            await _accounts.DeleteAsync(accountId, cancellationToken: cancellationToken);
+        });
+
     public Task<IResult<PayeeAccountDTO>> GetAccountAsync(string accountId, CancellationToken cancellationToken = default) =>
         StripeCall.RunAsync(logger, nameof(GetAccountAsync), async () =>
         {

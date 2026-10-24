@@ -233,6 +233,23 @@ public class StripeConnectApiClientTests
     }
 
     [Fact]
+    public async Task DeletingAnAccount_SendsADelete_AndABalanceRefusalIsAResult()
+    {
+        var stub = new StubStripeHandler()
+            .Answer("/v1/accounts/acct_1", """{"id":"acct_1","object":"account","deleted":true}""")
+            .Answer("/v1/accounts/acct_2", """{"error":{"message":"This account cannot be deleted while it has a balance.","type":"invalid_request_error"}}""", System.Net.HttpStatusCode.BadRequest);
+        var (client, _) = Create(stub);
+
+        var deleted = await client.DeleteAccountAsync("acct_1");
+        var refused = await client.DeleteAccountAsync("acct_2");
+
+        Assert.True(deleted.Succeeded);
+        Assert.Equal(HttpMethod.Delete, stub.Requests[0].Method);
+        Assert.False(refused.Succeeded);
+        Assert.Contains("balance", refused.Messages[0].Title);
+    }
+
+    [Fact]
     public async Task ThePersons_AreListedWithTheirRoles()
     {
         var (client, _) = Create(new StubStripeHandler().Answer("/v1/accounts/acct_1/persons", """

@@ -106,6 +106,16 @@ public interface IPayeeAccountClient
         string personId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Closes the account at the provider, for a payee who no longer wants to be paid there. The
+    /// provider refuses while the account still holds a balance, and keeps what the law requires it to.
+    /// </summary>
+    /// <param name="accountId">The account to close.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult> DeleteAccountAsync(
+        string accountId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>What the provider currently says about the account.</summary>
     /// <param name="accountId">The account to read.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
