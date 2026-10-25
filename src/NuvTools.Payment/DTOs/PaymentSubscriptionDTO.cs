@@ -14,6 +14,10 @@ namespace NuvTools.Payment.DTOs;
 /// <param name="CurrentPeriodEndUtc">When the period already paid for ends.</param>
 /// <param name="CancelAtPeriodEnd">Whether it ends at <paramref name="CurrentPeriodEndUtc"/> rather than renewing.</param>
 /// <param name="Metadata">What the caller stored on it when it was started.</param>
+/// <param name="Items">
+/// Every price it is charged at, with its quantity: the plan's own price and, on a subscription that also
+/// sells seats, one item per seat price. <see cref="PriceLookupKey"/> is the first of them.
+/// </param>
 public record PaymentSubscriptionDTO(
     string SubscriptionId,
     string CustomerId,
@@ -22,4 +26,5 @@ public record PaymentSubscriptionDTO(
     string? PriceLookupKey,
     DateTimeOffset? CurrentPeriodEndUtc,
     bool CancelAtPeriodEnd,
-    IReadOnlyDictionary<string, string> Metadata);
+    IReadOnlyDictionary<string, string> Metadata,
+    IReadOnlyList<PaymentSubscriptionItemDTO>? Items = null);

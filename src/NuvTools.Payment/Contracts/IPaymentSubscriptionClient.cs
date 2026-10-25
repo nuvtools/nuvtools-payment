@@ -50,4 +50,25 @@ public interface IPaymentSubscriptionClient
     Task<IResult<PaymentSubscriptionDTO>> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets how many units of a price a subscription is charged for — the seats of a per-seat price —
+    /// adding the price when the subscription does not carry it yet and taking it off at zero.
+    /// </summary>
+    /// <remarks>
+    /// The quantity is absolute, never a difference, so a call repeated after a failure leaves the same
+    /// count. The change is prorated over the period already running, and the subscription is returned as
+    /// it stands afterwards.
+    /// </remarks>
+    /// <param name="subscriptionId">The provider's identifier for the subscription.</param>
+    /// <param name="priceLookupKey">The lookup key of the price whose quantity is set.</param>
+    /// <param name="quantity">The new quantity; zero takes the price off the subscription.</param>
+    /// <param name="idempotencyKey">Makes a retried request apply once.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<PaymentSubscriptionDTO>> SetItemQuantityAsync(
+        string subscriptionId,
+        string priceLookupKey,
+        long quantity,
+        string? idempotencyKey = null,
+        CancellationToken cancellationToken = default);
 }

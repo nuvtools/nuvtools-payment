@@ -19,6 +19,7 @@ public class StripeSubscriptionApiClient(
 {
     private readonly PriceService _prices = new(client);
     private readonly SubscriptionService _subscriptions = new(client);
+    private readonly SubscriptionItemService _subscriptionItems = new(client);
     private readonly global::Stripe.Checkout.SessionService _checkoutSessions = new(client);
     private readonly global::Stripe.BillingPortal.SessionService _portalSessions = new(client);
 
@@ -90,9 +91,79 @@ public class StripeSubscriptionApiClient(
             return Describe(subscription);
         });
 
+    public async Task<IResult<PaymentSubscriptionDTO>> SetItemQuantityAsync(
+        string subscriptionId, string priceLookupKey, long quantity,
+        string? idempotencyKey = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(subscriptionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(priceLookupKey);
+        ArgumentOutOfRangeException.ThrowIfNegative(quantity);
+
+        var read = await StripeCall.RunAsync(logger, nameof(SetItemQuantityAsync), async () =>
+            await _subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken));
+
+        if (!read.Succeeded || read.Data is not { } subscription) return Result<PaymentSubscriptionDTO>.Fail(read.Messages);
+
+        var item = subscription.Items?.Data?.FirstOrDefault(e => e.Price?.LookupKey == priceLookupKey);
+
+        if (item is null && quantity == 0) return Result<PaymentSubscriptionDTO>.Success(Describe(subscription), string.Empty);
+
+        if (item is not null && item.Quantity == quantity) return Result<PaymentSubscriptionDTO>.Success(Describe(subscription), string.Empty);
+
+        var options = string.IsNullOrWhiteSpace(idempotencyKey) ? null : new RequestOptions { IdempotencyKey = idempotencyKey };
+
+        IResult changed;
+
+        if (item is null)
+        {
+            var found = await StripeCall.RunAsync(logger, nameof(SetItemQuantityAsync), async () =>
+                (await _prices.ListAsync(new PriceListOptions
+                {
+                    LookupKeys = [priceLookupKey],
+                    Active = true,
+                    Limit = 1
+                }, cancellationToken: cancellationToken)).Data.FirstOrDefault());
+
+            if (found.ContainsNotFound)
+                return Result<PaymentSubscriptionDTO>.FailNotFound($"No active price has the lookup key '{priceLookupKey}'.");
+
+            if (!found.Succeeded || found.Data is not { } price) return Result<PaymentSubscriptionDTO>.Fail(found.Messages);
+
+            changed = await StripeCall.RunAsync(logger, nameof(SetItemQuantityAsync), () =>
+                _subscriptionItems.CreateAsync(new SubscriptionItemCreateOptions
+                {
+                    Subscription = subscriptionId,
+                    Price = price.Id,
+                    Quantity = quantity,
+                    ProrationBehavior = "create_prorations"
+                }, options, cancellationToken));
+        }
+        else if (quantity == 0)
+        {
+            changed = await StripeCall.RunAsync(logger, nameof(SetItemQuantityAsync), () =>
+                _subscriptionItems.DeleteAsync(item.Id, new SubscriptionItemDeleteOptions
+                {
+                    ProrationBehavior = "create_prorations"
+                }, options, cancellationToken));
+        }
+        else
+        {
+            changed = await StripeCall.RunAsync(logger, nameof(SetItemQuantityAsync), () =>
+                _subscriptionItems.UpdateAsync(item.Id, new SubscriptionItemUpdateOptions
+                {
+                    Quantity = quantity,
+                    ProrationBehavior = "create_prorations"
+                }, options, cancellationToken));
+        }
+
+        if (!changed.Succeeded) return Result<PaymentSubscriptionDTO>.Fail(changed.Messages);
+
+        return await GetSubscriptionAsync(subscriptionId, cancellationToken);
+    }
+
     /// <remarks>
     /// The period end is read from the subscription's item: Stripe moved it there from the
-    /// subscription in API version 2025-03-31, and a subscription this package starts has one item.
+    /// subscription in API version 2025-03-31, and every item of a subscription shares its period.
     /// </remarks>
     private static PaymentSubscriptionDTO Describe(Subscription subscription)
     {
@@ -106,6 +177,7 @@ public class StripeSubscriptionApiClient(
             item?.Price?.LookupKey,
             item is null ? null : new DateTimeOffset(DateTime.SpecifyKind(item.CurrentPeriodEnd, DateTimeKind.Utc)),
             subscription.CancelAtPeriodEnd,
-            subscription.Metadata ?? new Dictionary<string, string>());
+            subscription.Metadata ?? new Dictionary<string, string>(),
+            [.. subscription.Items?.Data?.Select(e => new PaymentSubscriptionItemDTO(e.Price?.LookupKey, e.Quantity)) ?? []]);
     }
 }
