@@ -17,7 +17,7 @@ namespace NuvTools.Payment.Omie.ApiClient.Services;
 /// service order right after would drop the second call.
 /// </para>
 /// </summary>
-public class OmieServiceCatalogProvider(IOmieApiClient omie, IMemoryCache cache)
+public class OmieServiceCatalogProvider(IOmieApiClient omie, IMemoryCache cache, TimeProvider timeProvider)
 {
     private const int ServicesPerPage = 100;
 
@@ -69,15 +69,40 @@ public class OmieServiceCatalogProvider(IOmieApiClient omie, IMemoryCache cache)
 
     /// <summary>
     /// Full registration of a service (<c>ConsultarCadastroServico</c>) — it carries what the listing does not and
-    /// the service order inclusion requires: LC 116, municipal code and tax classification. Cached per service,
-    /// because the same two or three services repeat across every client.
+    /// the service order inclusion requires: LC 116, municipal code and tax classification. Cached per service for
+    /// <see cref="CacheDuration"/>, because the same two or three services repeat across every client.
     /// </summary>
-    public async Task<IResult<OmieServiceDetail>> GetServiceDetailAsync(long serviceCode, CancellationToken cancellationToken)
+    public Task<IResult<OmieServiceDetail>> GetServiceDetailAsync(long serviceCode, CancellationToken cancellationToken)
+        => GetServiceDetailAsync(serviceCode, CacheDuration, cancellationToken);
+
+    /// <summary>
+    /// Full registration of a service, re-read from Omie when the cached copy is older than
+    /// <paramref name="maxAge"/>. This is the overload for whoever <b>sends</b> the registration back to Omie — a
+    /// service order item carries the tax classification it was given, so a copy read before the user edited the
+    /// service would issue the invoice with the old taxation. A short <paramref name="maxAge"/> still lets a batch
+    /// of orders for the same service share one read, which is what keeps Omie from refusing the repeated call as
+    /// redundant consumption.
+    /// <para>
+    /// The cache is per process: on a host with several replicas each one keeps its own copy, which is why the
+    /// freshness is decided by age and not by an explicit "clear cache" action — a reload on one replica would not
+    /// reach the replica that issues the order.
+    /// </para>
+    /// <para>
+    /// When the re-read is refused (redundant consumption, Omie unavailable) the stale copy is <b>not</b> returned:
+    /// serving it is exactly the outdated data the caller asked to avoid. The failure carries Omie's message, so a
+    /// throttled call can be told apart and retried after the wait Omie reports.
+    /// </para>
+    /// </summary>
+    public async Task<IResult<OmieServiceDetail>> GetServiceDetailAsync(
+        long serviceCode, TimeSpan maxAge, CancellationToken cancellationToken)
     {
         var cacheKey = $"NuvTools:Omie:ServiceDetail:{serviceCode}";
+        var now = timeProvider.GetUtcNow();
 
-        if (cache.TryGetValue<OmieServiceDetail>(cacheKey, out var cached) && cached is not null)
-            return Result<OmieServiceDetail>.Success(cached);
+        if (cache.TryGetValue<CachedServiceDetail>(cacheKey, out var cached)
+            && cached is not null
+            && now - cached.ReadAt <= maxAge)
+            return Result<OmieServiceDetail>.Success(cached.Detail);
 
         var response = await omie.ConsultServiceRegistrationAsync(serviceCode, cancellationToken);
 
@@ -96,9 +121,12 @@ public class OmieServiceCatalogProvider(IOmieApiClient omie, IMemoryCache cache)
             header.MunicipalServiceCode,
             response.Data.Taxes?.TaxClassification);
 
-        cache.Set(cacheKey, detail, CacheDuration);
+        cache.Set(cacheKey, new CachedServiceDetail(detail, now), CacheDuration);
         return Result<OmieServiceDetail>.Success(detail);
     }
+
+    /// <summary>A service registration and the moment it was read from Omie — what lets a caller ask for its age.</summary>
+    private sealed record CachedServiceDetail(OmieServiceDetail Detail, DateTimeOffset ReadAt);
 
     /// <summary>
     /// The same catalog indexed by the internal identifier (<c>nCodServico</c>) — the way back, used when reading a

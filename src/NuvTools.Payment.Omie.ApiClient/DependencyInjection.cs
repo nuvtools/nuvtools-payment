@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NuvTools.Payment.Omie.ApiClient.Configuration;
 using NuvTools.Payment.Omie.ApiClient.Contracts;
 
@@ -31,6 +32,8 @@ public static class DependencyInjection
         // account takes revenue and whether it is active), checking accounts, and single-order invoicing.
         // They share the same "Omie" configuration section and go through the raw call client.
         services.AddMemoryCache();
+        // The service catalog decides by age whether a cached registration is still fresh enough to send back.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddHttpClient<Services.OmieDirectApiClient>();
         services.AddScoped<Services.OmieClientDirectoryProvider>();
         services.AddScoped<Services.OmieCategoryProvider>();
