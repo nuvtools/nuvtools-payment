@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using NuvTools.Payment.Omie.ApiClient.DTOs.Responses;
 
 namespace NuvTools.Payment.Omie.ApiClient.DTOs.Requests;
 
@@ -104,8 +105,16 @@ public class IncludeOSProvidedService
     [JsonPropertyName("nCodServico")]
     public required long ServiceCode { get; set; }
 
+    // Tipo de Tributação dos Serviços — the registration's cIdTrib. Its domain varies per municipality.
+    [JsonPropertyName("cTribServ")]
+    public string? TaxationType { get; set; }
+
     [JsonPropertyName("cCodServLC116")]
     public string? Lc116ServiceCode { get; set; }
+
+    // Nomenclatura Brasileira de Serviços — the registration's nIdNBS.
+    [JsonPropertyName("cNbs")]
+    public string? NbsCode { get; set; }
 
     [JsonPropertyName("cCodServMun")]
     public string? MunicipalServiceCode { get; set; }
@@ -160,10 +169,76 @@ public class IncludeOSProvidedService
 
 public class IncludeOSTaxes
 {
-    // All fields optional. When sent, Omie uses these values; when omitted, Omie
-    // pulls from the service registration. Pre-filling cClassTrib + alíquotas + retentions
-    // from the consult is what makes the OS show tributação inherited from the cadastro
-    // (instead of being treated as a free-form item).
+    // All fields optional. Omie documents that a blank field on a NEW item is filled from the service
+    // registration — but once the "impostos" block is sent, what is left out does not come from the cadastro
+    // (and AlterarOS has no "new item" to default from). Sending only cClassTrib is what left the OS with the
+    // Reforma Tributária tab (CST, indicador de operação, IBS/CBS) and the retentions empty. Build the block
+    // with FromServiceRegistration so every tax field the registration carries is echoed.
+    //
+    // Several tags here are read-only in Omie (cFixar*, cMan*, nValor*, nBaseISS): they exist for the
+    // consult/list payloads and must stay null on inclusion/change.
+
+    /// <summary>
+    /// The tax block of a service order item exactly as the service registration (<c>ConsultarCadastroServico</c>)
+    /// defines it: ISS rate, PIS/COFINS/CSLL/IR/INSS retention and rates, base reductions, ISS deduction and the
+    /// Reforma Tributária fields (CST, classification, operation indicator, IBS/CBS rates and reductions).
+    /// <para>
+    /// The tag names differ between the two Omie types (<c>cRetPIS</c> → <c>cRetemPIS</c>, <c>nAliqIR</c> →
+    /// <c>nAliqIRRF</c>, <c>cCstIbsCbs</c> → <c>cCST</c>, <c>cIndOper</c> → <c>cIndOPer</c>, <c>nRedBasePIS</c> →
+    /// <c>nAliqRedBasePIS</c>) — that translation is why this lives in the client. Blank codes stay null, so Omie
+    /// keeps its own default instead of receiving an empty value.
+    /// </para>
+    /// <para>
+    /// The ISS retention is not here: on the OS it belongs to the item (<c>cRetemISS</c>), not to <c>impostos</c>.
+    /// The registration's PIS/COFINS apuração CST (<c>cCstPIS</c>/<c>cCstCOFINS</c>) has no counterpart on the
+    /// service order item, so it cannot be sent.
+    /// </para>
+    /// </summary>
+    public static IncludeOSTaxes FromServiceRegistration(ConsultServiceTaxes taxes)
+    {
+        ArgumentNullException.ThrowIfNull(taxes);
+
+        return new IncludeOSTaxes
+        {
+            IssRate = taxes.IssRate,
+
+            WithholdPis = NullIfBlank(taxes.WithholdPis),
+            PisRate = taxes.PisRate,
+            PisBaseReductionRate = taxes.PisBaseReduction,
+
+            WithholdCofins = NullIfBlank(taxes.WithholdCofins),
+            CofinsRate = taxes.CofinsRate,
+            CofinsBaseReductionRate = taxes.CofinsBaseReduction,
+
+            WithholdCsll = NullIfBlank(taxes.WithholdCsll),
+            CsllRate = taxes.CsllRate,
+
+            WithholdIrrf = NullIfBlank(taxes.WithholdIr),
+            IrrfRate = taxes.IrRate,
+
+            WithholdInss = NullIfBlank(taxes.WithholdInss),
+            InssRate = taxes.InssRate,
+            InssBaseReductionRate = taxes.InssBaseReduction,
+
+            DeductIss = taxes.DeductIss,
+
+            IbsCbsCst = NullIfBlank(taxes.IbsCbsCst),
+            TaxClassification = NullIfBlank(taxes.TaxClassification),
+            OperationIndicator = NullIfBlank(taxes.OperationIndicator),
+            IbsMunRate = taxes.IbsMunRate,
+            IbsMunReductionPercentage = taxes.IbsMunReductionPercentage,
+            IbsUfRate = taxes.IbsUfRate,
+            IbsUfReductionPercentage = taxes.IbsUfReductionPercentage,
+            CbsRate = taxes.CbsRate,
+            CbsReductionPercentage = taxes.CbsReductionPercentage
+        };
+    }
+
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // Código da Situação Tributária IBS/CBS — the registration's cCstIbsCbs.
+    [JsonPropertyName("cCST")]
+    public string? IbsCbsCst { get; set; }
 
     [JsonPropertyName("cClassTrib")]
     public string? TaxClassification { get; set; }
@@ -227,6 +302,19 @@ public class IncludeOSTaxes
 
     [JsonPropertyName("nAliqINSS")]
     public decimal? InssRate { get; set; }
+
+    // The registration calls it nAliqIR; on the OS item it is nAliqIRRF.
+    [JsonPropertyName("nAliqIRRF")]
+    public decimal? IrrfRate { get; set; }
+
+    [JsonPropertyName("nAliqRedBaseCOFINS")]
+    public decimal? CofinsBaseReductionRate { get; set; }
+
+    [JsonPropertyName("nAliqRedBaseINSS")]
+    public decimal? InssBaseReductionRate { get; set; }
+
+    [JsonPropertyName("nAliqRedBasePIS")]
+    public decimal? PisBaseReductionRate { get; set; }
 
     [JsonPropertyName("nAliqISS")]
     public decimal? IssRate { get; set; }

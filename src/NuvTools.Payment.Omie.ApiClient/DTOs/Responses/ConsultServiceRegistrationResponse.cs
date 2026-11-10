@@ -149,4 +149,16 @@ public class ConsultServiceTaxes
 
     [JsonPropertyName("nRedBasePIS")]
     public decimal PisBaseReduction { get; set; }
+
+    [JsonPropertyName("cCstPIS")]
+    public string? PisCst { get; set; }
+
+    [JsonPropertyName("nAliqApuPIS")]
+    public decimal PisAssessmentRate { get; set; }
+
+    [JsonPropertyName("cCstCOFINS")]
+    public string? CofinsCst { get; set; }
+
+    [JsonPropertyName("nAliqApuCOFINS")]
+    public decimal CofinsAssessmentRate { get; set; }
 }

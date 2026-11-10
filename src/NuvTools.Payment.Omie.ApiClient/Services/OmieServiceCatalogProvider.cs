@@ -119,7 +119,13 @@ public class OmieServiceCatalogProvider(IOmieApiClient omie, IMemoryCache cache,
             header.UnitPrice,
             header.Lc116Code,
             header.MunicipalServiceCode,
-            response.Data.Taxes?.TaxClassification);
+            response.Data.Taxes?.TaxClassification)
+        {
+            TaxationType = header.TaxId,
+            NbsCode = header.NbsId,
+            FullDescription = response.Data.Description?.FullDescription,
+            Taxes = response.Data.Taxes
+        };
 
         cache.Set(cacheKey, new CachedServiceDetail(detail, now), CacheDuration);
         return Result<OmieServiceDetail>.Success(detail);
