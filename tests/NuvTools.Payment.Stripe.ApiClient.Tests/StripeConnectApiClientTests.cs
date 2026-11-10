@@ -233,6 +233,27 @@ public class StripeConnectApiClientTests
     }
 
     [Fact]
+    public async Task ThePoliticalExposure_FollowsTheTokenInACallOfItsOwn()
+    {
+        var stub = new StubStripeHandler()
+            .Answer("/v1/accounts/acct_1/persons/person_1", """{"id":"person_1","object":"person"}""")
+            .Answer("/v1/accounts/acct_1/persons", """{"id":"person_1","object":"person"}""");
+        var (client, _) = Create(stub);
+
+        var saved = await client.SavePersonAsync("acct_1", "cpt_1", politicallyExposed: false);
+        await client.SavePersonAsync("acct_1", "cpt_2", "person_1", politicallyExposed: true);
+
+        var bodies = stub.Requests.Select(r => (r.Path, Body: Uri.UnescapeDataString(r.Body!))).ToList();
+
+        Assert.Equal("person_1", saved.Data);
+        Assert.Equal(4, bodies.Count);
+        Assert.Equal(("/v1/accounts/acct_1/persons", "person_token=cpt_1"), bodies[0]);
+        Assert.Equal(("/v1/accounts/acct_1/persons/person_1", "political_exposure=none"), bodies[1]);
+        Assert.Equal(("/v1/accounts/acct_1/persons/person_1", "person_token=cpt_2"), bodies[2]);
+        Assert.Equal(("/v1/accounts/acct_1/persons/person_1", "political_exposure=existing"), bodies[3]);
+    }
+
+    [Fact]
     public async Task DeletingAnAccount_SendsADelete_AndABalanceRefusalIsAResult()
     {
         var stub = new StubStripeHandler()
