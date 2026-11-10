@@ -150,7 +150,7 @@ public class StripeConnectApiClient(
         });
 
     public Task<IResult<string>> SavePersonAsync(
-        string accountId, string personToken, string? personId = null, CancellationToken cancellationToken = default)
+        string accountId, string personToken, string? personId = null, bool? politicallyExposed = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(personToken);
 
@@ -159,6 +159,12 @@ public class StripeConnectApiClient(
             var person = string.IsNullOrWhiteSpace(personId)
                 ? await _persons.CreateAsync(accountId, new AccountPersonCreateOptions { PersonToken = personToken }, cancellationToken: cancellationToken)
                 : await _persons.UpdateAsync(accountId, personId, new AccountPersonUpdateOptions { PersonToken = personToken }, cancellationToken: cancellationToken);
+
+            // Stripe.js leaves political_exposure out of a person token, and Stripe refuses it next to
+            // one, so it goes in a call of its own. It is a yes or no, not an identity detail.
+            if (politicallyExposed is { } exposed)
+                await _persons.UpdateAsync(accountId, person.Id,
+                    new AccountPersonUpdateOptions { PoliticalExposure = exposed ? "existing" : "none" }, cancellationToken: cancellationToken);
 
             return person.Id;
         });

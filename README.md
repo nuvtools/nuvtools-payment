@@ -61,7 +61,9 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
 - **The application's own onboarding form** without identity data on its servers: the browser turns the
   details into account, person and bank-account tokens with Stripe.js and the publishable key, and
   `UpdateAccountAsync` / `SavePersonAsync` pass the tokens on. The terms acceptance goes inside the
-  account token (`tos_shown_and_accepted`): Stripe refuses `tos_acceptance` next to one
+  account token (`tos_shown_and_accepted`): Stripe refuses `tos_acceptance` next to one. Stripe.js
+  drops `political_exposure` from a person token, so `SavePersonAsync` takes it as `politicallyExposed`
+  and records it in a call of its own right after the token
 - **Separate charges and transfers** - one charge can pay several connected accounts, which a
   destination charge cannot express
 - Full and partial **refunds**, deliberately without `ReverseTransfer`

@@ -90,11 +90,17 @@ public interface IPayeeAccountClient
     /// <param name="accountId">The company's account.</param>
     /// <param name="personToken">The person's details, as a provider person token.</param>
     /// <param name="personId">The person to change; <see langword="null"/> registers a new one.</param>
+    /// <param name="politicallyExposed">
+    /// Whether the person holds, or held, a senior public office, or is close to someone who does;
+    /// <see langword="null"/> leaves it as it is. A provider whose browser library drops this answer
+    /// from the token receives it here and records it right after the token.
+    /// </param>
     /// <param name="cancellationToken">Cancels the call.</param>
     Task<IResult<string>> SavePersonAsync(
         string accountId,
         string personToken,
         string? personId = null,
+        bool? politicallyExposed = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Removes a person registered on a company account by mistake.</summary>
