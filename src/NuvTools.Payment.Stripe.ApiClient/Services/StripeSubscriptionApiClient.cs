@@ -3,6 +3,7 @@ using NuvTools.Common.ResultWrapper;
 using NuvTools.Payment.Contracts;
 using NuvTools.Payment.DTOs;
 using NuvTools.Payment.DTOs.Requests;
+using NuvTools.Payment.Enumerations;
 using Stripe;
 
 namespace NuvTools.Payment.Stripe.ApiClient.Services;
@@ -81,6 +82,92 @@ public class StripeSubscriptionApiClient(
 
             return session.Url;
         });
+
+    public async Task<IResult<PaymentSubscriptionStartDTO>> CreateSubscriptionAsync(
+        SubscriptionRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var found = await StripeCall.RunAsync(logger, nameof(CreateSubscriptionAsync), async () =>
+            (await _prices.ListAsync(new PriceListOptions
+            {
+                LookupKeys = [request.PriceLookupKey],
+                Active = true,
+                Limit = 1
+            }, cancellationToken: cancellationToken)).Data.FirstOrDefault());
+
+        if (found.ContainsNotFound)
+            return Result<PaymentSubscriptionStartDTO>.FailNotFound($"No active price has the lookup key '{request.PriceLookupKey}'.");
+
+        if (!found.Succeeded || found.Data is not { } price)
+            return Result<PaymentSubscriptionStartDTO>.Fail(found.Messages);
+
+        return await StripeCall.RunAsync(logger, nameof(CreateSubscriptionAsync), async () =>
+        {
+            var subscription = await _subscriptions.CreateAsync(new SubscriptionCreateOptions
+            {
+                Customer = request.CustomerId,
+                Items = [new SubscriptionItemOptions { Price = price.Id, Quantity = 1 }],
+                DefaultPaymentMethod = request.PaymentMethodId,
+                Metadata = request.Metadata?.ToDictionary(e => e.Key, e => e.Value),
+
+                // The first invoice is charged now. A refusal or a card asking for its owner leaves the
+                // subscription incomplete rather than failing the call, so the page can finish it.
+                PaymentBehavior = "allow_incomplete",
+                Expand =
+                [
+                    "latest_invoice.confirmation_secret",
+                    "latest_invoice.payments.data.payment.payment_intent"
+                ]
+            },
+            string.IsNullOrWhiteSpace(request.IdempotencyKey) ? null : new RequestOptions { IdempotencyKey = request.IdempotencyKey },
+            cancellationToken);
+
+            return FirstPaymentOf(subscription);
+        });
+    }
+
+    public Task<IResult<PaymentSubscriptionDTO>> CancelSubscriptionAsync(
+        string subscriptionId, CancellationToken cancellationToken = default) =>
+        SetCancelAtPeriodEndAsync(subscriptionId, true, nameof(CancelSubscriptionAsync), cancellationToken);
+
+    public Task<IResult<PaymentSubscriptionDTO>> ResumeSubscriptionAsync(
+        string subscriptionId, CancellationToken cancellationToken = default) =>
+        SetCancelAtPeriodEndAsync(subscriptionId, false, nameof(ResumeSubscriptionAsync), cancellationToken);
+
+    private Task<IResult<PaymentSubscriptionDTO>> SetCancelAtPeriodEndAsync(
+        string subscriptionId, bool cancel, string operation, CancellationToken cancellationToken) =>
+        StripeCall.RunAsync(logger, operation, async () =>
+        {
+            var subscription = await _subscriptions.UpdateAsync(subscriptionId,
+                new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancel },
+                cancellationToken: cancellationToken);
+
+            return Describe(subscription);
+        });
+
+    /// <summary>
+    /// What became of the first invoice: an active or trialing subscription was paid (or had nothing to
+    /// pay); an incomplete one is waiting on its payment intent, which says whether the card refused or
+    /// wants its owner.
+    /// </summary>
+    private static PaymentSubscriptionStartDTO FirstPaymentOf(Subscription subscription)
+    {
+        var described = Describe(subscription);
+
+        if (subscription.Status is "active" or "trialing")
+            return new PaymentSubscriptionStartDTO(described, PaymentStatusType.Succeeded, null, null);
+
+        var invoice = subscription.LatestInvoice;
+        var intent = invoice?.Payments?.Data?.Select(e => e.Payment?.PaymentIntent).FirstOrDefault(e => e is not null);
+
+        if (intent?.Status == "requires_action")
+            return new PaymentSubscriptionStartDTO(described, PaymentStatusType.RequiresAction,
+                invoice?.ConfirmationSecret?.ClientSecret ?? intent.ClientSecret, null);
+
+        return new PaymentSubscriptionStartDTO(described, PaymentStatusType.Failed, null,
+            intent?.LastPaymentError?.Message);
+    }
 
     public Task<IResult<PaymentSubscriptionDTO>> GetSubscriptionAsync(
         string subscriptionId, CancellationToken cancellationToken = default) =>

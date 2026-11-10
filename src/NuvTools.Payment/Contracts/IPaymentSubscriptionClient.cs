@@ -44,6 +44,34 @@ public interface IPaymentSubscriptionClient
         string returnUrl,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Starts a subscription charged to a payment method the customer already saved — no provider page.
+    /// </summary>
+    /// <remarks>
+    /// The first invoice is charged at once. A card that wants its owner to confirm leaves the
+    /// subscription incomplete, with a client secret for the caller's own page to confirm with; the
+    /// outcome then arrives by webhook like every later one.
+    /// </remarks>
+    /// <param name="request">Who pays, for which price, from which saved method.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<PaymentSubscriptionStartDTO>> CreateSubscriptionAsync(
+        SubscriptionRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ends a subscription at the end of the period already paid for; it renews no more.</summary>
+    /// <param name="subscriptionId">The provider's identifier for it.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<PaymentSubscriptionDTO>> CancelSubscriptionAsync(
+        string subscriptionId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Undoes <see cref="CancelSubscriptionAsync"/> while the period is still running: it renews again.</summary>
+    /// <param name="subscriptionId">The provider's identifier for it.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<PaymentSubscriptionDTO>> ResumeSubscriptionAsync(
+        string subscriptionId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>A subscription as the provider holds it now.</summary>
     /// <param name="subscriptionId">The provider's identifier for it.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

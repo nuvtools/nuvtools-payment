@@ -53,5 +53,23 @@ public enum PaymentEventType
     InvoicePaid = 9,
 
     /// <summary>Paying a subscription's invoice failed; the provider may retry it.</summary>
-    InvoicePaymentFailed = 10
+    InvoicePaymentFailed = 10,
+
+    /// <summary>An invoice was issued: it has its number now, and its charge follows.</summary>
+    InvoiceFinalized = 11,
+
+    /// <summary>Paying an invoice needs the customer to confirm it — a card asking for its owner.</summary>
+    InvoicePaymentActionRequired = 12,
+
+    /// <summary>An invoice was voided; nobody owes it.</summary>
+    InvoiceVoided = 13,
+
+    /// <summary>The provider gave up collecting an invoice.</summary>
+    InvoiceUncollectible = 14,
+
+    /// <summary>A credit note was issued against an invoice, refunding part or all of it.</summary>
+    CreditNoteIssued = 15,
+
+    /// <summary>A saved payment method was removed from its customer.</summary>
+    PaymentMethodRemoved = 16
 }

@@ -71,6 +71,20 @@ public interface IPaymentCustomerClient
         string customerId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Every card the customer saved, the default one marked, newest first.</summary>
+    /// <param name="customerId">Whose payment methods to list.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult<IReadOnlyList<PaymentMethodDTO>>> ListPaymentMethodsAsync(
+        string customerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Removes a saved payment method from its customer; it can no longer be charged.</summary>
+    /// <param name="paymentMethodId">The method to remove.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    Task<IResult> RemovePaymentMethodAsync(
+        string paymentMethodId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Makes a payment method the one later charges are taken from.</summary>
     /// <param name="customerId">Whose default is being set.</param>
     /// <param name="paymentMethodId">The method to charge from now on.</param>

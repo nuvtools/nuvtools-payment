@@ -66,6 +66,7 @@ public class StripeChargeApiClient(IStripeClient client, ILogger<StripeChargeApi
                 Amount = request.AmountMinor,
                 Currency = request.CurrencyCode.ToLowerInvariant(),
                 TransferGroup = request.TransferGroup,
+                SourceTransaction = request.SourceChargeId,
                 Metadata = request.Metadata?.ToDictionary(e => e.Key, e => e.Value)
             },
             new RequestOptions { IdempotencyKey = request.IdempotencyKey },

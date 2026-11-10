@@ -40,6 +40,12 @@ internal static class StripeEventReader
     public const string SubscriptionDeleted = "customer.subscription.deleted";
     public const string InvoicePaid = "invoice.paid";
     public const string InvoicePaymentFailed = "invoice.payment_failed";
+    public const string InvoiceFinalized = "invoice.finalized";
+    public const string InvoicePaymentActionRequired = "invoice.payment_action_required";
+    public const string InvoiceVoided = "invoice.voided";
+    public const string InvoiceMarkedUncollectible = "invoice.marked_uncollectible";
+    public const string CreditNoteCreated = "credit_note.created";
+    public const string PaymentMethodDetached = "payment_method.detached";
 
     public static PaymentEventDTO Read(Event stripeEvent, string payload)
     {
@@ -65,7 +71,8 @@ internal static class StripeEventReader
             Value(payload, "last_payment_error", "message"),
             payload,
             SubscriptionIdOf(type, objectId, payload),
-            type == PaymentEventType.CheckoutCompleted ? CheckoutTypeOf(Value(payload, "mode")) : null);
+            type == PaymentEventType.CheckoutCompleted ? CheckoutTypeOf(Value(payload, "mode")) : null,
+            InvoiceIdOf(type, objectId, payload));
     }
 
     private static PaymentEventType Type(string? stripeType) => stripeType switch
@@ -80,6 +87,12 @@ internal static class StripeEventReader
         SubscriptionDeleted => PaymentEventType.SubscriptionEnded,
         InvoicePaid => PaymentEventType.InvoicePaid,
         InvoicePaymentFailed => PaymentEventType.InvoicePaymentFailed,
+        InvoiceFinalized => PaymentEventType.InvoiceFinalized,
+        InvoicePaymentActionRequired => PaymentEventType.InvoicePaymentActionRequired,
+        InvoiceVoided => PaymentEventType.InvoiceVoided,
+        InvoiceMarkedUncollectible => PaymentEventType.InvoiceUncollectible,
+        CreditNoteCreated => PaymentEventType.CreditNoteIssued,
+        PaymentMethodDetached => PaymentEventType.PaymentMethodRemoved,
         _ => PaymentEventType.Unknown
     };
 
@@ -96,8 +109,20 @@ internal static class StripeEventReader
     {
         PaymentEventType.SubscriptionChanged or PaymentEventType.SubscriptionEnded => objectId,
         PaymentEventType.CheckoutCompleted => Value(payload, "subscription"),
-        PaymentEventType.InvoicePaid or PaymentEventType.InvoicePaymentFailed =>
+        PaymentEventType.InvoicePaid or PaymentEventType.InvoicePaymentFailed or PaymentEventType.InvoiceFinalized
+            or PaymentEventType.InvoicePaymentActionRequired or PaymentEventType.InvoiceVoided
+            or PaymentEventType.InvoiceUncollectible =>
             Value(payload, "parent", "subscription_details", "subscription") ?? Value(payload, "subscription"),
+        _ => null
+    };
+
+    /// <summary>The invoice an event is about: the object itself, or the one a credit note credits.</summary>
+    private static string? InvoiceIdOf(PaymentEventType type, string? objectId, string payload) => type switch
+    {
+        PaymentEventType.InvoicePaid or PaymentEventType.InvoicePaymentFailed or PaymentEventType.InvoiceFinalized
+            or PaymentEventType.InvoicePaymentActionRequired or PaymentEventType.InvoiceVoided
+            or PaymentEventType.InvoiceUncollectible => objectId,
+        PaymentEventType.CreditNoteIssued => Value(payload, "invoice"),
         _ => null
     };
 

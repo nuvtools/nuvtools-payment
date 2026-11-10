@@ -10,10 +10,15 @@ namespace NuvTools.Payment.DTOs.Requests;
 /// </param>
 /// <param name="TransferGroup">Ties this transfer to the charges it is paid out of.</param>
 /// <param name="Metadata">Carried on the provider's object.</param>
+/// <param name="SourceChargeId">
+/// The charge the money comes from. The transfer is then paid out of that charge once it settles,
+/// rather than out of the platform's available balance, which may not hold it yet.
+/// </param>
 public record PaymentTransferRequest(
     string DestinationAccountId,
     long AmountMinor,
     string CurrencyCode,
     string IdempotencyKey,
     string? TransferGroup = null,
-    IDictionary<string, string>? Metadata = null);
+    IDictionary<string, string>? Metadata = null,
+    string? SourceChargeId = null);

@@ -19,11 +19,12 @@ capabilities, and they are declared here so that the application layer never ref
 
 | Contract | What it is for |
 |---|---|
-| `IPaymentCustomerClient` | Who is charged, and the payment method they saved — including a provider-hosted page, so no card and no provider script reach the caller's own origin |
+| `IPaymentCustomerClient` | Who is charged, and the payment methods they saved: a setup intent for the caller's own form, or a provider-hosted page; listing, removing and choosing the default card |
 | `IPayeeAccountClient` | An account the platform can pay, and the onboarding that makes it payable — the provider's screens, or the application's own form sending tokens |
 | `IPaymentChargeClient` | Charging a customer, and transferring to a payee — two calls, never one destination charge |
 | `IPaymentRefundClient` | Giving money back, in whole or in part. Its own contract because refunding is not the inverse of charging: it names a payment rather than a customer, and a caller that may charge is not automatically one that may refund |
-| `IPaymentSubscriptionClient` | Recurring billing run by the provider: a hosted checkout that starts a subscription to a price found by its lookup key, the hosted page where the customer manages it, and the subscription as it stands now |
+| `IPaymentSubscriptionClient` | Recurring billing run by the provider: a subscription to a price found by its lookup key, started from a saved card (or a hosted checkout), cancelled at the period end or resumed, and read as it stands now |
+| `IPaymentInvoiceClient` | Invoices kept by the provider — its subscriptions' and the ones the caller issues for usage it measured — listed, paid again, credited back, and their PDFs fetched server side |
 | `IPaymentWebhookVerifier` | The signature check, and the payload read into the fields a caller acts on |
 
 Amounts are always in the currency's **minor units**; `PaymentMoney` converts, rounding once.
@@ -68,11 +69,21 @@ Stripe's implementation of those contracts, over the official `Stripe.net` SDK.
   destination charge cannot express
 - Full and partial **refunds**, deliberately without `ReverseTransfer`
 - Caller-supplied idempotency keys on every money-moving call
-- **Subscriptions** on Stripe Billing: Checkout in subscription mode with the price found by its
-  lookup key, the customer portal, and the subscription read with its status, price key and period
+- **Subscriptions** on Stripe Billing, the price found by its lookup key: started from a saved card
+  (`payment_behavior=allow_incomplete`; a card asking for 3-D Secure returns the client secret the
+  caller's page confirms with), or through Checkout; cancelled at the period end and resumed; the
+  customer portal; the subscription read with its status, price key and period
+- **Invoices** on Stripe Invoicing: one issued for the caller's own lines in keyed steps (draft, items,
+  finalization, one charge), so a repeat after a failure part-way issues nothing twice; a refused first
+  charge leaves it open rather than failing the call. Listed without drafts, paid again after a card
+  change, credited back with a credit note refunded to the card, and the invoice and credit note PDFs
+  downloaded by the server, since Stripe's link to them needs no credential
+- Saved cards listed with their expiry and the default marked, and removed (detached)
+- Transfers funded by a given charge (`SourceChargeId`, Stripe's `source_transaction`), so a payee is
+  paid out of the invoice that collected the money
 - Webhook signature verification, with a separate secret for the Connect endpoint, and the
-  subscription, checkout and invoice events read into `PaymentEventDTO.SubscriptionId` and
-  `CheckoutType`
+  subscription, checkout, invoice and credit note events read into `PaymentEventDTO.SubscriptionId`,
+  `CheckoutType` and `InvoiceId`
 
 ### Configuration
 
@@ -114,7 +125,7 @@ services.AddStripeApiClient(configuration);
 ```
 
 Injects Stripe behind `IPaymentCustomerClient`, `IPayeeAccountClient`, `IPaymentChargeClient`,
-`IPaymentRefundClient`, `IPaymentSubscriptionClient` and `IPaymentWebhookVerifier` — so this call, in the composition root, is the
+`IPaymentRefundClient`, `IPaymentSubscriptionClient`, `IPaymentInvoiceClient` and `IPaymentWebhookVerifier` — so this call, in the composition root, is the
 only place the application names Stripe. Each method returns `IResult<T>`, so a declined card is a result to read rather than an
 exception to catch.
 

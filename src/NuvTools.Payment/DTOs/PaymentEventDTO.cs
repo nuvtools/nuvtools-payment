@@ -36,6 +36,10 @@ namespace NuvTools.Payment.DTOs;
 /// started, or the one an invoice bills — when it is about one.
 /// </param>
 /// <param name="CheckoutType">What a completed checkout was opened for, on <see cref="PaymentEventType.CheckoutCompleted"/>.</param>
+/// <param name="InvoiceId">
+/// The invoice the event is about — the invoice itself, or the one a credit note credits — when it is
+/// about one.
+/// </param>
 public record PaymentEventDTO(
     string EventId,
     PaymentEventType Type,
@@ -47,4 +51,5 @@ public record PaymentEventDTO(
     string? FailureReason,
     string PayloadJson,
     string? SubscriptionId = null,
-    PaymentCheckoutType? CheckoutType = null);
+    PaymentCheckoutType? CheckoutType = null,
+    string? InvoiceId = null);

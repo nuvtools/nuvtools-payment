@@ -12,7 +12,7 @@ namespace NuvTools.Payment.Stripe.ApiClient;
 /// </summary>
 public static class DependencyInjection
 {
-    private const string HttpClientName = "StripeApi";
+    internal const string HttpClientName = "StripeApi";
 
     /// <summary>
     /// Binds the <c>Stripe</c> configuration section and registers Stripe behind the
@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentChargeClient, StripeChargeApiClient>();
         services.AddScoped<IPaymentRefundClient, StripeRefundApiClient>();
         services.AddScoped<IPaymentSubscriptionClient, StripeSubscriptionApiClient>();
+        services.AddScoped<IPaymentInvoiceClient, StripeInvoiceApiClient>();
         services.AddSingleton<IPaymentWebhookVerifier, StripeWebhookVerifier>();
 
         return services;
