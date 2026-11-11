@@ -74,6 +74,22 @@ public class StripeInvoiceApiClientTests
     }
 
     [Fact]
+    public async Task ACustomerWithNoCard_StillGetsTheInvoice_Open()
+    {
+        var (client, _) = Create(new StubStripeHandler()
+            .Answer("/v1/invoiceitems", """{"id":"ii_1","object":"invoiceitem"}""")
+            .Answer("/v1/invoices/in_1/finalize", OpenInvoice)
+            .Answer("/v1/invoices/in_1/pay", """{"error":{"message":"This customer has no attached payment source or default payment method.","type":"invalid_request_error"}}""", HttpStatusCode.BadRequest)
+            .Answer("/v1/invoices/in_1", OpenInvoice)
+            .Answer("/v1/invoices", OpenInvoice));
+
+        var result = await client.CreateInvoiceAsync(Request);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(PaymentInvoiceStatusType.Open, result.Data!.Status);
+    }
+
+    [Fact]
     public async Task Paying_ReportsTheRefusal_ForTheCustomerToRead()
     {
         var (client, _) = Create(new StubStripeHandler()

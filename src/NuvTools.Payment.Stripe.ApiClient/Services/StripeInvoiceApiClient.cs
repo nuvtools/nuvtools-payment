@@ -199,8 +199,10 @@ public class StripeInvoiceApiClient(
         {
             await _invoices.PayAsync(invoiceId, new InvoicePayOptions { OffSession = true }, options, cancellationToken);
         }
-        catch (StripeException exception) when (exception.StripeError?.Type == "card_error")
+        catch (StripeException exception)
         {
+            // A declined card, and a customer with no card at all, alike: the invoice is issued either
+            // way, and failing here would fail every repeat too, since Stripe replays this key's answer.
             logger.LogInformation("Stripe refused the first charge of invoice {InvoiceId}: {Code}.", invoiceId, exception.StripeError?.Code);
         }
     }
