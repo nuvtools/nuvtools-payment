@@ -57,6 +57,26 @@ public class StripeInvoiceApiClientTests
     }
 
     [Fact]
+    public async Task ANamedCard_IsTheOneTheInvoiceIsChargedTo_AndNoneLeavesTheDefault()
+    {
+        StubStripeHandler Stub() => new StubStripeHandler()
+            .Answer("/v1/invoiceitems", """{"id":"ii_1","object":"invoiceitem"}""")
+            .Answer("/v1/invoices/in_1/finalize", OpenInvoice)
+            .Answer("/v1/invoices/in_1/pay", PaidInvoice)
+            .Answer("/v1/invoices/in_1", PaidInvoice)
+            .Answer("/v1/invoices", OpenInvoice);
+
+        var (named, namedStub) = Create(Stub());
+        await named.CreateInvoiceAsync(Request with { PaymentMethodId = "pm_dp" });
+
+        var (unnamed, unnamedStub) = Create(Stub());
+        await unnamed.CreateInvoiceAsync(Request);
+
+        Assert.Contains("default_payment_method=pm_dp", Uri.UnescapeDataString(namedStub.Requests.First(r => r.Path == "/v1/invoices").Body!));
+        Assert.DoesNotContain("default_payment_method", unnamedStub.Requests.First(r => r.Path == "/v1/invoices").Body!);
+    }
+
+    [Fact]
     public async Task ARefusedFirstCharge_LeavesTheInvoiceOpen_RatherThanFailingTheCall()
     {
         var (client, _) = Create(new StubStripeHandler()

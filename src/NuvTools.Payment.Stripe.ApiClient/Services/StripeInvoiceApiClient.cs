@@ -68,6 +68,9 @@ public class StripeInvoiceApiClient(
                 PendingInvoiceItemsBehavior = "exclude",
                 Description = request.Description,
                 StatementDescriptor = request.StatementDescriptor,
+
+                // Charged to this card rather than the customer's default, when the caller names one.
+                DefaultPaymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethodId) ? null : request.PaymentMethodId,
                 Metadata = metadata
             }, Keyed(request.IdempotencyKey, "invoice"), cancellationToken);
 

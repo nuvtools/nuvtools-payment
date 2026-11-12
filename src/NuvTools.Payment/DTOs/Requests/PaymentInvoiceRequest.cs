@@ -20,6 +20,11 @@ namespace NuvTools.Payment.DTOs.Requests;
 /// Whether the provider charges the customer's default payment method as soon as it is issued. When
 /// <see langword="false"/> it stays open for the customer to pay.
 /// </param>
+/// <param name="PaymentMethodId">
+/// The customer's saved payment method this invoice is charged to, instead of the customer's default —
+/// for a customer who pays each product with a different card. It must already be attached to the
+/// customer. The default when <see langword="null"/>.
+/// </param>
 public record PaymentInvoiceRequest(
     string CustomerId,
     string CurrencyCode,
@@ -30,4 +35,5 @@ public record PaymentInvoiceRequest(
     DateTimeOffset? PeriodStartUtc = null,
     DateTimeOffset? PeriodEndUtc = null,
     IDictionary<string, string>? Metadata = null,
-    bool ChargeAutomatically = true);
+    bool ChargeAutomatically = true,
+    string? PaymentMethodId = null);
