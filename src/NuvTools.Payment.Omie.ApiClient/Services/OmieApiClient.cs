@@ -325,9 +325,41 @@ public class OmieApiClient(
             return Result<TResponse>.Fail(string.Format(Messages.InvalidResponseFromOmieX, operation), logger: logger);
 
         var (isFailure, errorBody) = ValidateOmieBusinessStatus(result.StatusCode, result.StatusDescription, operation);
-        return isFailure
-            ? Result<TResponse>.Fail(errorBody, logger: logger)
-            : Result<TResponse>.Success(result);
+
+        if (!isFailure)
+            return Result<TResponse>.Success(result);
+
+        // HTTP 200 with a business failure in the body never reaches the HTTP-level log in SendRawAsync.
+        logger.LogWarning(
+            "Omie call failed. Call {Call}, Url {Url}, Status {Status}, Request {Request}, Response {Response}",
+            operation, url, (int)response.StatusCode,
+            OmieCallLog.MaskCredentials(request.ToJsonString(JsonOptions)), OmieCallLog.Truncate(responseBody));
+
+        return Result<TResponse>.Fail(errorBody, logger: logger);
+    }
+
+    /// <summary>
+    /// Logs a call Omie refused at the HTTP level (4xx/5xx, after retries): the request exactly as sent — credentials
+    /// masked — and the response body, so the exact exchange is available when an error has to be explained later.
+    /// The content is buffered first, so the caller still reads the same body afterwards.
+    /// </summary>
+    private async Task LogFailedCallAsync(string json, string url, HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        string responseBody;
+        try
+        {
+            await response.Content.LoadIntoBufferAsync(cancellationToken);
+            responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        {
+            responseBody = $"(response body unreadable: {ex.Message})";
+        }
+
+        logger.LogWarning(
+            "Omie call failed. Call {Call}, Url {Url}, Status {Status}, Request {Request}, Response {Response}",
+            OmieCallLog.CallOf(json), url, (int)response.StatusCode,
+            OmieCallLog.MaskCredentials(json), OmieCallLog.Truncate(responseBody));
     }
 
     private JsonObject BuildRequest(string call, JsonArray param)
@@ -387,6 +419,9 @@ public class OmieApiClient(
                         await DelayBeforeRetryAsync(attempt, cancellationToken);
                         continue;
                     }
+
+                    if (!response.IsSuccessStatusCode)
+                        await LogFailedCallAsync(json, url, response, cancellationToken);
 
                     return response;
                 }

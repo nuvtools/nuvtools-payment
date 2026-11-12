@@ -53,9 +53,11 @@ public class OmieDirectApiClient(
             param = new[] { param }
         };
 
+        var json = JsonSerializer.Serialize(request, SerializerOptions);
+
         try
         {
-            using var content = new StringContent(JsonSerializer.Serialize(request, SerializerOptions), Encoding.UTF8, "application/json");
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
             using var httpResponse = await httpClient.PostAsync(url, content, cancellationToken);
@@ -65,14 +67,17 @@ public class OmieDirectApiClient(
             {
                 var fault = DescribeFault(body);
 
+                // The exchange as it happened — request with the credentials masked, and the response — so the exact
+                // JSON is available when the failure has to be explained later.
                 if (OmieFaultClassifier.IsThrottled(fault))
                 {
-                    logger.LogWarning("Omie throttled {Call}. Url {Url}: {Fault}", call, url, fault);
+                    logger.LogWarning("Omie throttled {Call}. Url {Url}, Status {Status}, Request {Request}, Response {Response}",
+                        call, url, (int)httpResponse.StatusCode, OmieCallLog.MaskCredentials(json), OmieCallLog.Truncate(body));
                     return Result<TResponse>.Fail(OmieFaultClassifier.DescribeThrottle(fault));
                 }
 
-                logger.LogError("Omie {Call} failed. Url {Url}, Status {Status}, Body {Body}",
-                    call, url, (int)httpResponse.StatusCode, Truncate(body, 1000));
+                logger.LogError("Omie {Call} failed. Url {Url}, Status {Status}, Request {Request}, Response {Response}",
+                    call, url, (int)httpResponse.StatusCode, OmieCallLog.MaskCredentials(json), OmieCallLog.Truncate(body));
 
                 return Result<TResponse>.Fail(string.Format(Messages.OmieCallFailedXStatusXFaultX,
                     call, (int)httpResponse.StatusCode, fault ?? Truncate(body, 300)));
